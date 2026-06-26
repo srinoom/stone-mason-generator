@@ -1,21 +1,30 @@
 import bpy
+from .geometry.builder import add_modifier
 
 
 class STONE_OT_generate(bpy.types.Operator):
 
     bl_idname = "stone.generate"
-
     bl_label = "Generate"
-
     bl_options = {'REGISTER', 'UNDO'}
 
     def execute(self, context):
 
-        props = context.scene.stone_generator
+        obj = context.active_object
+
+        if obj is None:
+            self.report({'ERROR'}, "No active object")
+            return {'CANCELLED'}
+
+        if obj.type != 'MESH':
+            self.report({'ERROR'}, "Select a mesh")
+            return {'CANCELLED'}
+
+        add_modifier(obj)
 
         self.report(
             {'INFO'},
-            f"Seed {props.seed} | Stones {props.stone_count}"
+            "Stone Generator Added"
         )
 
         return {'FINISHED'}

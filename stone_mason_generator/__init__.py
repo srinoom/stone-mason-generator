@@ -13,8 +13,10 @@ import importlib
 from . import properties
 from . import operators
 from . import panel
+from .geometry import builder
 
 modules = (
+    builder,
     properties,
     operators,
     panel,
