@@ -1,15 +1,14 @@
 """Composition layer -- orchestrates engine build order and interface.
 
-Pipeline (Step 12):
-
-    1. ParameterizeEngine  -- UVN coordinates + SurfaceContext
-    2. SurfaceTopology     -- boundary/corner detection
+Pipeline (Step 13):
+    1. ParameterizeEngine  -- UVN + SurfaceContext
+    2. SurfaceTopology     -- boundaries + corners
     3. CourseEngine        -- course_index from v_coord
-    4. CourseLayout        -- grid points from SurfaceContext bounds
-    5. RunningBond         -- shift point positions
-    6. InstanceEngine      -- Primitive + Modifier stack + Instance + Realize
+    4. CourseLayout        -- grid from SurfaceContext bounds
+    5. RunningBond         -- stagger odd courses
+    6. InstanceEngine      -- Primitive + conditional Modifier stack + Instance
 
-Primitive and modifier sockets flow from InstanceEngine → interface.
+Step 13: validation + conditional modifier generation.
 """
 
 import bpy
@@ -24,7 +23,7 @@ from .layout import CourseLayout, LayoutStrategy
 from .bond import RunningBond
 from .instance import InstanceEngine
 from .primitive import RectangularBlock
-from .modifier import NoiseModifier
+from .modifier import NoiseModifier, ModifierContext, ValidationReport
 
 
 class Composer:
@@ -53,7 +52,9 @@ class Composer:
             sockets.extend(primitive_sockets)
         return sockets
 
-    def build_group(self, group: bpy.types.NodeTree) -> None:
+    def build_group(self, group: bpy.types.NodeTree,
+                    ctx: ModifierContext = None,
+                    report: ValidationReport = None) -> None:
         self._ensure_interface(group)
 
         graph = NodeGraph(group)
@@ -62,16 +63,18 @@ class Composer:
         gi = graph.group_input(location=(-800, 0))
 
         prev = gi
-        ctx = None
+        surface_ctx = None
 
         for engine in self._engines:
             if isinstance(engine, ParameterizeEngine):
                 prev = engine.build(graph, gi, prev)
-                ctx = getattr(graph, 'surface_context', None)
+                surface_ctx = getattr(graph, 'surface_context', None)
             elif isinstance(engine, SurfaceTopology):
-                prev = engine.build(graph, gi, prev, ctx)
+                prev = engine.build(graph, gi, prev, surface_ctx)
             elif isinstance(engine, LayoutStrategy):
-                prev = engine.build(graph, gi, prev, ctx)
+                prev = engine.build(graph, gi, prev, surface_ctx)
+            elif isinstance(engine, InstanceEngine):
+                prev = engine.build(graph, gi, prev, ctx, report)
             else:
                 prev = engine.build(graph, gi, prev)
 
@@ -104,7 +107,7 @@ def default_composer() -> Composer:
         3. CourseEngine        -- course_index from v_coord
         4. CourseLayout        -- grid from SurfaceContext bounds
         5. RunningBond         -- stagger odd courses
-        6. InstanceEngine      -- RectangularBlock + NoiseModifier, realize
+        6. InstanceEngine      -- RectangularBlock + [NoiseModifier], realize
     """
     c = Composer()
     c.register_engine(ParameterizeEngine())

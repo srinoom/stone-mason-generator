@@ -1,12 +1,12 @@
 """Stone Mason Generator -- main add-on module.
 
-Step 12: Primitive/Modifier separation + configurable realize.
+Step 13: Conditional modifiers + validation + robustness.
 """
 
 bl_info = {
     "name": "Stone Mason Generator",
     "author": "Boy + ChatGPT",
-    "version": (1, 3, 0),
+    "version": (1, 4, 0),
     "blender": (5, 1, 0),
     "location": "View3D > Sidebar > Stone",
     "description": "Generate procedural stone masonry from meshes.",

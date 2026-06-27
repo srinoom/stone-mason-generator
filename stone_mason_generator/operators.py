@@ -3,6 +3,7 @@
 import bpy
 
 from .geometry.builder import NodeGroupManager
+from .geometry.modifier import ModifierContext, ValidationReport
 
 
 class STONE_OT_generate(bpy.types.Operator):
@@ -24,7 +25,25 @@ class STONE_OT_generate(bpy.types.Operator):
             return {'CANCELLED'}
 
         props = context.scene.stone_generator
-        NodeGroupManager.apply(obj, props)
+
+        # --- validate before building ---
+        report = ValidationReport()
+        NodeGroupManager._validate(props, report)
+
+        if not report.ok:
+            for err in report.errors:
+                self.report({'ERROR'}, err)
+            return {'CANCELLED'}
+
+        modifier = NodeGroupManager.apply(obj, props)
+
+        if modifier is None:
+            self.report({'ERROR'}, "Generation failed — see errors above")
+            return {'CANCELLED'}
+
+        # --- surface warnings ---
+        for warn in report.warnings:
+            self.report({'WARNING'}, warn)
 
         self.report({'INFO'}, "Stone Generator applied")
         return {'FINISHED'}
@@ -43,4 +62,3 @@ def register():
 def unregister():
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
-
