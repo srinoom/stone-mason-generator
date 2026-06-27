@@ -161,7 +161,7 @@ class RandomScatter(LayoutStrategy):
         distribute = g.distribute_points_on_faces(location=(-400, 0))
         distribute.distribute_method = 'RANDOM'  # type: ignore[assignment]
 
-        g.link(prev_geometry.outputs[0],
+        g.link(prev_geometry.outputs["Geometry"],
                distribute.inputs["Mesh"])
         g.link(group_input.outputs["Density"],
                distribute.inputs["Density"])
@@ -169,5 +169,6 @@ class RandomScatter(LayoutStrategy):
                distribute.inputs["Seed"])
 
         return distribute
+
 
 

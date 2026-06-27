@@ -78,8 +78,8 @@ class BondPattern:
 
         # --- set position: shift points along X ---
         set_pos = g.set_position(location=(200, 0))
-        g.link(prev_geometry.outputs["Points"],
-               set_pos.inputs[0])  # Geometry input
+        g.link(prev_geometry.outputs["Geometry"],
+               set_pos.inputs["Geometry"])
         g.link(combine.outputs["Vector"],
                set_pos.inputs["Offset"])  # Vector offset
 
@@ -110,5 +110,6 @@ class RunningBond(BondPattern):
         g.link(group_input.outputs["Bond Offset"], mul.inputs[1])
 
         return mul
+
 
 

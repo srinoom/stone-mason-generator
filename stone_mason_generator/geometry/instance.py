@@ -97,7 +97,7 @@ class InstanceEngine:
 
         # --- instance stones on points ---
         inst = g.instance_on_points(location=(0, 0))
-        g.link(prev_geometry.outputs[0],
+        g.link(prev_geometry.outputs["Geometry"],
                inst.inputs["Points"])
         g.link(mesh.outputs["Mesh"],
                inst.inputs["Instance"])
@@ -109,4 +109,6 @@ class InstanceEngine:
                    realize.inputs["Geometry"])
             return realize
 
-        return inst
+        return inst  # output socket is "Instances" — still Geometry type
+
+

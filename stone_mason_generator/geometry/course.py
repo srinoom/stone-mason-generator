@@ -58,7 +58,7 @@ class CourseEngine:
         store_idx.data_type = 'FLOAT'
         store_idx.domain = 'POINT'
         store_idx.inputs["Name"].default_value = "course_index"
-        g.link(prev_geometry.outputs[0], store_idx.inputs["Geometry"])
+        g.link(prev_geometry.outputs["Geometry"], store_idx.inputs["Geometry"])
         g.link(floor.outputs[0], store_idx.inputs["Value"])
 
         # --- course_base_v = course_index * course_height ---
@@ -75,4 +75,5 @@ class CourseEngine:
         g.link(mul.outputs[0], store_base.inputs["Value"])
 
         return store_base
+
 

@@ -80,7 +80,8 @@ class SurfaceTopology:
         store_top.data_type = 'FLOAT'
         store_top.domain = 'POINT'
         store_top.inputs["Name"].default_value = "is_top_boundary"
-        g.link(prev_geometry.outputs[0], store_top.inputs["Geometry"])
+        g.link(prev_geometry.outputs["Geometry"],
+               store_top.inputs["Geometry"])
         g.link(is_top.outputs[0], store_top.inputs["Value"])
 
         # --- is_bottom_boundary: v_coord <= v_min + tolerance ---
@@ -155,6 +156,7 @@ class SurfaceTopology:
         g.link(corner.outputs[0], store_corner.inputs["Value"])
 
         return store_corner
+
 
 
 
