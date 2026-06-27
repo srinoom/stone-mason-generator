@@ -1,23 +1,22 @@
 """Node-group and modifier lifecycle management.
 
-Single entry point for operators: :meth:`NodeGroupManager.apply`.
-Handles node-group creation/reuse, interface setup, and modifier wiring.
+Builder only manages node groups and modifiers.
+It delegates node-tree construction to the Composer.
 """
 
 import bpy
 
-from .graph import NodeGraph
-from .scatter import ScatterEngine
+from .nodes import default_composer
 
 
 class NodeGroupManager:
-    """Create or reuse the scatter-engine node group and apply it as a modifier."""
+    """Create or reuse the SMG node group and apply it as a modifier."""
 
-    GROUP_NAME = ScatterEngine.GROUP_NAME
+    GROUP_NAME = "SMG_StoneGenerator"
 
     @classmethod
     def get_or_create_group(cls) -> bpy.types.NodeTree:
-        """Return the SMG node group, creating it if necessary."""
+        """Return the SMG node group, creating and building it if necessary."""
         group = bpy.data.node_groups.get(cls.GROUP_NAME)
 
         if group is None:
@@ -26,8 +25,8 @@ class NodeGroupManager:
                 "GeometryNodeTree",
             )
 
-        engine = ScatterEngine(group)
-        engine.build()
+        composer = default_composer()
+        composer.build_group(group)
         return group
 
     @classmethod
@@ -35,7 +34,7 @@ class NodeGroupManager:
         """Add (or refresh) the scatter modifier on *obj*.
 
         ``props`` is a :class:`StoneProperties` instance; its fields are
-        pushed into the modifier socket defaults.
+        pushed into the modifier socket inputs.
         """
         group = cls.get_or_create_group()
 
@@ -44,7 +43,6 @@ class NodeGroupManager:
             modifier = obj.modifiers.new(cls.GROUP_NAME, "NODES")
         modifier.node_group = group
 
-        # Push property values → modifier socket defaults
         cls._sync_props(modifier, props)
 
         return modifier
@@ -53,22 +51,21 @@ class NodeGroupManager:
 
     @staticmethod
     def _sync_props(modifier: bpy.types.Modifier, props) -> None:
-        """Copy StoneProperties fields into the modifier's input sockets."""
+        """Copy StoneProperties fields into the modifier's input sockets.
+
+        Modifier socket identifiers use the interface socket name with
+        spaces replaced by underscores and a trailing underscore
+        (Blender 4.x/5.x convention).
+        """
         mapping = {
             "Density":      props.density,
             "Seed":         props.seed,
-            "Stone Width":  props.stone_width,
-            "Stone Height": props.stone_height,
+            "Stone_Width":  props.stone_width,
+            "Stone_Height": props.stone_height,
         }
-        # Modifier socket identifiers follow the interface socket names
-        # for simple names (no spaces replaced in 4.x/5.x).
-        for name, value in mapping.items():
+        for identifier, value in mapping.items():
             try:
-                modifier[f"{name.replace(' ', '_')}_"] = value
+                modifier[identifier + "_"] = value
             except KeyError:
-                # identifier fallback -- try direct name
-                try:
-                    modifier[name] = value
-                except KeyError:
-                    pass
+                pass
 

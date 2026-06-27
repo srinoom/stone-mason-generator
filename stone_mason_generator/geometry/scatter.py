@@ -1,113 +1,89 @@
-"""Scatter Engine -- the procedural stone-distribution foundation.
+"""Scatter Engine -- distributes stone instances on a mesh surface.
 
 Pipeline:
-    Input Mesh
-      → Mesh-to-Points (surface sample)
-      → Instance-on-Points (stone prototypes)
+    Input Geometry
+      → Distribute Points on Faces (density-driven)
+      → Instance Mesh Cube (stone prototype)
       → Realize Instances
-      → Output Mesh
+      → Output Geometry
 
-This is Step 4 of the Stone Mason Generator roadmap.
-The scatter engine is the base layer; later steps add course generation,
-stone segmentation, shape variation, and physics relaxation on top.
+This is Step 5. Stone shaping, course generation, and physics
+relaxation are NOT implemented here -- future engines will plug
+into the Composer alongside this one.
 """
 
 import bpy
-from typing import Optional
+from typing import List, Tuple
 
 from .graph import NodeGraph
 
 
 class ScatterEngine:
-    """Builds a Geometry Node tree that scatters stone cubes on a mesh surface.
+    """Distributes stone instances across a mesh surface.
 
-    The group exposes four input sockets -- **Density**, **Seed**,
-    **Stone Width**, **Stone Height** -- so the operator / UI can
-    drive the scatter without rebuilding the tree.
+    The engine declares its required interface sockets via :attr:`SOCKETS`
+    so the Composer can build a unified node-group interface.
     """
 
-    GROUP_NAME = "SMG_ScatterEngine"
-
-    # Interface sockets: (name, in_out, socket_type, default_value)
-    SOCKETS = [
-        ("Geometry",      "INPUT",  "NodeSocketGeometry", None),
-        ("Density",       "INPUT",  "NodeSocketFloat",    40.0),
-        ("Seed",          "INPUT",  "NodeSocketInt",      0),
-        ("Stone Width",   "INPUT",  "NodeSocketFloat",    0.50),
-        ("Stone Height",  "INPUT",  "NodeSocketFloat",    0.25),
-        ("Geometry",      "OUTPUT", "NodeSocketGeometry", None),
+    # (name, in_out, socket_type, default_value)
+    SOCKETS: List[Tuple[str, str, str, object]] = [
+        ("Density",      "INPUT", "NodeSocketFloat", 50.0),
+        ("Seed",         "INPUT", "NodeSocketInt",   0),
+        ("Stone Width",  "INPUT", "NodeSocketFloat", 0.50),
+        ("Stone Height", "INPUT", "NodeSocketFloat", 0.25),
     ]
 
-    def __init__(self, group: bpy.types.NodeTree):
-        self.group = group
-        self.graph = NodeGraph(group)
+    def build(self, graph: NodeGraph,
+              group_input: bpy.types.Node,
+              prev_geometry: bpy.types.Node) -> bpy.types.Node:
+        """Build the scatter sub-tree.
 
-    # -- public API --------------------------------------------------------
+        Args:
+            graph: NodeGraph wrapper for the active node group.
+            group_input: Group Input node (for parameter access).
+            prev_geometry: Previous geometry output node to chain from.
 
-    def build(self) -> bpy.types.NodeTree:
-        """Clear the group and rebuild the entire scatter node tree."""
-        self._ensure_interface()
-        self.graph.clear()
-        self._layout()
-        return self.group
+        Returns:
+            The final output node of this engine (Realize Instances).
+        """
+        g = graph
 
-    # -- private -----------------------------------------------------------
+        # --- distribute points on faces ---
+        distribute = g.distribute_points_on_faces(location=(-400, 0))
+        # Default to RANDOM distribution mode
+        distribute.distribute_method = 'RANDOM'  # type: ignore[assignment]
 
-    def _ensure_interface(self) -> None:
-        """Create group interface sockets if they don't already exist."""
-        existing = {s.name for s in self.group.interface.items
-                    if s.item_type == 'SOCKET'}
+        g.link(prev_geometry.outputs["Geometry"],
+               distribute.inputs["Mesh"])
+        g.link(group_input.outputs["Density"],
+               distribute.inputs["Density"])
+        g.link(group_input.outputs["Seed"],
+               distribute.inputs["Seed"])
 
-        for name, in_out, sock_type, default in self.SOCKETS:
-            if name in existing:
-                continue
-            sock = self.group.interface.new_socket(
-                name=name,
-                in_out=in_out,
-                socket_type=sock_type,
-            )
-            if default is not None:
-                sock.default_value = default
+        # --- stone prototype (cube scaled to stone dimensions) ---
+        combine_size = g.combine_xyz(location=(-200, -300))
+        g.link(group_input.outputs["Stone Width"],
+               combine_size.inputs["X"])
+        g.link(group_input.outputs["Stone Height"],
+               combine_size.inputs["Y"])
+        g.link(group_input.outputs["Stone Width"],
+               combine_size.inputs["Z"])
 
-    def _layout(self) -> None:
-        g = self.graph
+        stone = g.cube(location=(0, -300))
+        g.link(combine_size.outputs["Vector"],
+               stone.inputs["Size"])
 
-        gi = g.group_input()
-
-        # --- surface → points ---
-        mtp = g.node(
-            "GeometryNodeMeshToPoints",
-            location=(0, 0),
-            label="Surface to Points",
-        )
-        mtp.inputs["Mode"].default_value = 'VERTICES'  # type: ignore[assignment]
-
-        # TODO Step 5: replace Mesh-to-Points with a proper UV-grid / course
-        #   generator that lays out points in rows (courses) instead of
-        #   raw vertices.  This is the layer Course Generator will plug into.
-
-        # --- stone prototype ---
-        stone = g.cube(location=(350, -200))
-
-        # --- instance ---
-        inst = g.instance_on_points(location=(350, 0))
+        # --- instance stones on points ---
+        inst = g.instance_on_points(location=(0, 0))
+        g.link(distribute.outputs["Points"],
+               inst.inputs["Points"])
+        g.link(stone.outputs["Mesh"],
+               inst.inputs["Instance"])
 
         # --- realize ---
-        realize = g.realize_instances(location=(600, 0))
+        realize = g.realize_instances(location=(300, 0))
+        g.link(inst.outputs["Instances"],
+               realize.inputs["Geometry"])
 
-        go = g.group_output()
-
-        # --- links ---
-        # geometry flow
-        g.link(gi.outputs["Geometry"], mtp.inputs["Mesh"])
-        g.link(mtp.outputs["Points"], inst.inputs["Points"])
-        g.link(stone.outputs["Mesh"], inst.inputs["Instance"])
-        g.link(inst.outputs["Instances"], realize.inputs["Geometry"])
-        g.link(realize.outputs["Geometry"], go.inputs["Geometry"])
-
-        # param wiring (density, seed, size → node inputs)
-        g.link(gi.outputs["Density"], mtp.inputs["Radius"])
-        g.link(gi.outputs["Stone Width"],
-               stone.inputs["Size"])  # vector auto-expand on cube
-        g.link(gi.outputs["Seed"], inst.inputs["Pick Index"])  # placeholder
+        return realize
 

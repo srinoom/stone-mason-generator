@@ -1,9 +1,7 @@
 """Low-level Geometry Node tree builder API.
 
-This module provides a thin wrapper around Blender's bpy node-group API,
-giving every node-creation call a clean, consistent signature.
-No business logic lives here -- higher-level engines (scatter.py, etc.)
-compose these primitives into useful node trees.
+Thin wrapper around Blender's bpy node-group API.
+No business logic -- higher-level engines compose these primitives.
 """
 
 import bpy
@@ -38,40 +36,36 @@ class NodeGraph:
         """Connect *out_socket* to *in_socket*."""
         self.links.new(out_socket, in_socket)
 
-    def link_chain(self, *pairs) -> None:
-        """Link multiple (out_socket, in_socket) pairs in one call."""
-        for out_sock, in_sock in pairs:
-            self.link(out_sock, in_sock)
-
     # -- convenience factories --------------------------------------------
 
     def group_input(self, location: tuple = (-800, 0)) -> bpy.types.Node:
         return self.new("NodeGroupInput", location)
 
-    def group_output(self, location: tuple = (800, 0)) -> bpy.types.Node:
+    def group_output(self, location: tuple = (600, 0)) -> bpy.types.Node:
         return self.new("NodeGroupOutput", location)
 
-    def transform(self, location: tuple = (-400, 0)) -> bpy.types.Node:
-        return self.new("GeometryNodeTransform", location)
-
-    def mesh_to_points(self, location: tuple = (0, 0)) -> bpy.types.Node:
-        return self.new("GeometryNodeMeshToPoints", location)
-
-    def instance_on_points(self, location: tuple = (300, 0)) -> bpy.types.Node:
-        return self.new("GeometryNodeInstanceOnPoints", location)
-
-    def realize_instances(self, location: tuple = (600, 0)) -> bpy.types.Node:
+    def realize_instances(self, location: tuple = (300, 0)) -> bpy.types.Node:
         return self.new("GeometryNodeRealizeInstances", location)
 
-    def cube(self, location: tuple = (300, -300)) -> bpy.types.Node:
+    def cube(self, location: tuple = (0, -300)) -> bpy.types.Node:
         return self.new("GeometryNodeMeshCube", location)
+
+    def instance_on_points(self, location: tuple = (0, 0)) -> bpy.types.Node:
+        return self.new("GeometryNodeInstanceOnPoints", location)
+
+    def distribute_points_on_faces(self,
+                                   location: tuple = (-400, 0)) -> bpy.types.Node:
+        return self.new("GeometryNodeDistributePointsOnFaces", location)
+
+    def combine_xyz(self, location: tuple = (-200, -300)) -> bpy.types.Node:
+        return self.new("ShaderNodeCombineXYZ", location)
 
     # -- generic node with params -----------------------------------------
 
     def node(self, node_type: str, location: tuple = (0, 0),
              label: Optional[str] = None,
              params: Optional[dict] = None) -> bpy.types.Node:
-        """Create a node and set input default values from *params* dict.
+        """Create a node and set input default values from *params*.
 
         ``params`` maps socket names (str) or indices (int) to values.
         """
