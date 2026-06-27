@@ -81,8 +81,17 @@ class NodeGraph:
                               location: tuple = (0, 0)) -> bpy.types.Node:
         return self.new("GeometryNodeStoreNamedAttribute", location)
 
+    def named_attribute(self,
+                        location: tuple = (0, 0)) -> bpy.types.Node:
+        """Read a named attribute from the current geometry context."""
+        return self.new("GeometryNodeInputNamedAttribute", location)
+
     def bounding_box(self, location: tuple = (0, 0)) -> bpy.types.Node:
         return self.new("GeometryNodeBoundBox", location)
+
+    def set_position(self, location: tuple = (0, 0)) -> bpy.types.Node:
+        """Modify position of geometry elements via offset or absolute."""
+        return self.new("GeometryNodeSetPosition", location)
 
     # -- generic node with params -----------------------------------------
 

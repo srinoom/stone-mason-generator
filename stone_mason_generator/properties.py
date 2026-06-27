@@ -42,6 +42,14 @@ class StoneProperties(bpy.types.PropertyGroup):
         max=5.0,
     )
 
+    bond_offset: bpy.props.FloatProperty(
+        name="Bond Offset",
+        description="Horizontal stagger between adjacent courses",
+        default=0.25,
+        min=0.0,
+        max=5.0,
+    )
+
 
 classes = (
     StoneProperties,
@@ -62,4 +70,3 @@ def unregister():
 
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
-

@@ -5,9 +5,13 @@ The Composer is the single place that knows:
   - what order they run in
   - which interface sockets the group needs
 
-Engines (CourseEngine, ScatterEngine, future StoneEngine, SolverEngine)
-declare their socket requirements via ``SOCKETS`` and expose a
+Engines declare socket requirements via ``SOCKETS`` and expose a
 ``build(graph, group_input, prev_geometry) -> node`` method.
+
+Pipeline:
+    1. CourseEngine  -- assign course_index using WallFrame
+    2. BondPattern   -- stagger courses with horizontal offset
+    3. ScatterEngine -- distribute stones on faces (inherits courses + bond)
 
 Builder never imports engines directly -- it calls Composer.
 """
@@ -17,6 +21,7 @@ from typing import List, Tuple
 
 from .graph import NodeGraph
 from .course import CourseEngine
+from .bond import RunningBond
 from .scatter import ScatterEngine
 
 
@@ -35,13 +40,7 @@ class Composer:
         self._engines = []
 
     def register_engine(self, engine) -> None:
-        """Register a pipeline stage.
-
-        engine must expose:
-            SOCKETS        -- list of (name, in_out, socket_type, default)
-            frame_sockets  -- optional, list of same tuple shape (can be [])
-            build(graph, group_input, prev_geometry) -> node
-        """
+        """Register a pipeline stage."""
         self._engines.append(engine)
 
     # -- interface management ---------------------------------------------
@@ -51,7 +50,6 @@ class Composer:
         sockets = list(self.BASE_SOCKETS)
         for engine in self._engines:
             sockets.extend(engine.SOCKETS)
-            # Merge frame sockets if the engine declares them
             frame_sockets = getattr(engine, 'frame_sockets', [])
             sockets.extend(frame_sockets)
         return sockets
@@ -100,11 +98,13 @@ def default_composer() -> Composer:
     """Return a Composer pre-loaded with the current pipeline engines.
 
     Pipeline order:
-        1. CourseEngine  -- assign course_index using WallFrame
-        2. ScatterEngine -- distribute stones on faces (inherits courses)
+        1. CourseEngine   -- assign course_index (ZUpFrame)
+        2. RunningBond    -- stagger odd courses by Bond Offset
+        3. ScatterEngine  -- distribute stones (inherits courses + bond)
     """
     c = Composer()
-    c.register_engine(CourseEngine())  # defaults to ZUpFrame
+    c.register_engine(CourseEngine())       # defaults to ZUpFrame
+    c.register_engine(RunningBond())        # defaults to 50% stagger
     c.register_engine(ScatterEngine())
     return c
 

@@ -1,12 +1,12 @@
 """Stone Mason Generator -- main add-on module.
 
-Step 7: WallFrame abstraction — CourseEngine no longer tied to world Z.
+Step 8: Bond Pattern Generator (RunningBond).
 """
 
 bl_info = {
     "name": "Stone Mason Generator",
     "author": "Boy + ChatGPT",
-    "version": (0, 8, 0),
+    "version": (0, 9, 0),
     "blender": (5, 1, 0),
     "location": "View3D > Sidebar > Stone",
     "description": "Generate procedural stone masonry from meshes.",
@@ -20,6 +20,7 @@ from .geometry import builder
 from .geometry import graph
 from .geometry import wall_frame
 from .geometry import course
+from .geometry import bond
 from .geometry import scatter
 from .geometry import nodes
 
@@ -27,6 +28,7 @@ modules = (
     graph,
     wall_frame,
     course,
+    bond,
     scatter,
     nodes,
     builder,
@@ -50,4 +52,3 @@ def unregister():
 
 if __name__ == "__main__":
     register()
-

@@ -5,7 +5,7 @@ import bpy
 
 class VIEW3D_PT_stone_generator(bpy.types.Panel):
 
-    bl_space_type = "VIEW_3D"
+    bl_space_type = "VIEW3D"
     bl_region_type = "UI"
     bl_category = "Stone"
     bl_label = "Stone Mason Generator"
@@ -17,6 +17,10 @@ class VIEW3D_PT_stone_generator(bpy.types.Panel):
         box = layout.box()
         box.label(text="Courses", icon='LINENUMBERS_ON')
         box.prop(props, "course_height")
+
+        box = layout.box()
+        box.label(text="Bond Pattern", icon='MOD_ARRAY')
+        box.prop(props, "bond_offset")
 
         box = layout.box()
         box.label(text="Scatter", icon='OUTLINER_OB_GROUP_INSTANCE')
@@ -42,4 +46,3 @@ def register():
 def unregister():
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
-

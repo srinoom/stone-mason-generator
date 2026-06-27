@@ -33,7 +33,7 @@ class NodeGroupManager:
     def apply(cls, obj: bpy.types.Object, props) -> bpy.types.Modifier:
         """Add (or refresh) the scatter modifier on *obj*.
 
-        ``props`` is a :class:`StoneProperties instance; its fields are
+        ``props`` is a :class:`StoneProperties` instance; its fields are
         pushed into the modifier socket inputs.
         """
         group = cls.get_or_create_group()
@@ -63,10 +63,10 @@ class NodeGroupManager:
             "Stone_Width":   props.stone_width,
             "Stone_Height":  props.stone_height,
             "Course_Height": props.course_height,
+            "Bond_Offset":   props.bond_offset,
         }
         for identifier, value in mapping.items():
             try:
                 modifier[identifier + "_"] = value
             except KeyError:
                 pass
-
