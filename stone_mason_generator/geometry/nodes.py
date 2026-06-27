@@ -1,20 +1,31 @@
 """Composition layer -- orchestrates engine build order and interface.
 
-Pipeline (Step 9 refactor):
+Pipeline (Step 10 refactor):
 
-    1. CourseEngine     -- assign course_index on mesh (WallFrame)
-    2. CourseLayout     -- deterministic grid points from stone/joint dims
-    3. BondPattern      -- shift point positions based on course_index
-    4. InstanceEngine   -- instance stone prototypes on shifted points, realize
+    1. ParameterizeEngine  -- UVN coordinates + SurfaceContext
+    2. SurfaceTopology      -- boundary/corner detection
+    3. CourseEngine         -- course_index from v_coord
+    4. CourseLayout         -- grid points from SurfaceContext bounds
+    5. RunningBond          -- shift point positions
+    6. InstanceEngine       -- instance cubes, realize
 
-ScatterEngine has been replaced by LayoutStrategy in the pipeline.
-The Composer accepts any LayoutStrategy subclass.
+SurfaceContext flows from ParameterizeEngine → CourseLayout via
+the Composer. Named Attributes stored on geometry:
+  - u_coord, v_coord, n_coord  (surface parameterization)
+  - is_top/bottom/left/right_boundary, is_corner  (topology)
+  - course_index, course_base_v  (course generation)
+
+Internal pipeline data (bounds, width, height) lives in
+SurfaceContext node references — not stored as attributes.
 """
 
 import bpy
 from typing import List, Tuple
 
 from .graph import NodeGraph
+from .surface_context import SurfaceContext
+from .parameterize import ParameterizeEngine
+from .topology import SurfaceTopology
 from .course import CourseEngine
 from .layout import CourseLayout, LayoutStrategy
 from .bond import RunningBond
@@ -26,7 +37,6 @@ class Composer:
 
     GROUP_NAME = "SMG_StoneGenerator"
 
-    # Fixed interface sockets that every pipeline needs
     BASE_SOCKETS: List[Tuple[str, str, str, object]] = [
         ("Geometry", "INPUT",  "NodeSocketGeometry", None),
         ("Geometry", "OUTPUT", "NodeSocketGeometry", None),
@@ -36,13 +46,9 @@ class Composer:
         self._engines = []
 
     def register_engine(self, engine) -> None:
-        """Register a pipeline stage."""
         self._engines.append(engine)
 
-    # -- interface management ---------------------------------------------
-
     def all_sockets(self) -> List[Tuple[str, str, str, object]]:
-        """Return the complete socket list: base + engine + frame sockets."""
         sockets = list(self.BASE_SOCKETS)
         for engine in self._engines:
             sockets.extend(engine.SOCKETS)
@@ -50,10 +56,7 @@ class Composer:
             sockets.extend(frame_sockets)
         return sockets
 
-    # -- build -------------------------------------------------------------
-
     def build_group(self, group: bpy.types.NodeTree) -> None:
-        """Ensure interface sockets exist, clear nodes, run the pipeline."""
         self._ensure_interface(group)
 
         graph = NodeGraph(group)
@@ -61,20 +64,25 @@ class Composer:
 
         gi = graph.group_input(location=(-800, 0))
 
-        # Chain engines: each takes previous geometry, returns new geometry
-        prev = gi  # start from group input
-        for engine in self._engines:
-            prev = engine.build(graph, gi, prev)
+        prev = gi
+        ctx = None  # SurfaceContext, populated by ParameterizeEngine
 
-        # Final output
+        for engine in self._engines:
+            if isinstance(engine, ParameterizeEngine):
+                prev = engine.build(graph, gi, prev)
+                ctx = getattr(graph, 'surface_context', None)
+            elif isinstance(engine, SurfaceTopology):
+                prev = engine.build(graph, gi, prev, ctx)
+            elif isinstance(engine, LayoutStrategy):
+                prev = engine.build(graph, gi, prev, ctx)
+            else:
+                prev = engine.build(graph, gi, prev)
+
         go = graph.group_output(location=(800, 0))
         graph.link(prev.outputs["Geometry"],
                    go.inputs["Geometry"])
 
-    # -- private -----------------------------------------------------------
-
     def _ensure_interface(self, group: bpy.types.NodeTree) -> None:
-        """Create interface sockets that don't yet exist."""
         existing = {s.name for s in group.interface.items
                     if s.item_type == 'SOCKET'}
 
@@ -91,18 +99,21 @@ class Composer:
 
 
 def default_composer() -> Composer:
-    """Return a Composer pre-loaded with the current pipeline engines.
+    """Return a Composer pre-loaded with the full pipeline.
 
-    Pipeline order:
-        1. CourseEngine   -- assign course_index (ZUpFrame)
-        2. CourseLayout   -- deterministic grid points
-        3. RunningBond    -- shift point positions on odd courses
-        4. InstanceEngine -- instance cubes, realize
+    Pipeline:
+        1. ParameterizeEngine  -- UVN + SurfaceContext
+        2. SurfaceTopology     -- boundaries + corners
+        3. CourseEngine        -- course_index from v_coord
+        4. CourseLayout        -- grid from SurfaceContext bounds
+        5. RunningBond         -- stagger odd courses
+        6. InstanceEngine      -- instance cubes, realize
     """
     c = Composer()
+    c.register_engine(ParameterizeEngine())
+    c.register_engine(SurfaceTopology())
     c.register_engine(CourseEngine())
     c.register_engine(CourseLayout())
     c.register_engine(RunningBond())
     c.register_engine(InstanceEngine())
     return c
-

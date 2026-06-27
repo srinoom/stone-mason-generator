@@ -59,6 +59,10 @@ class NodeGraph:
     def position(self, location: tuple = (0, 0)) -> bpy.types.Node:
         return self.new("GeometryNodeInputPosition", location)
 
+    def input_normal(self, location: tuple = (0, 0)) -> bpy.types.Node:
+        """Read surface normal from current geometry context."""
+        return self.new("GeometryNodeInputNormal", location)
+
     def math(self, operation: str = 'ADD',
              location: tuple = (0, 0)) -> bpy.types.Node:
         """Create a Math node (scalar) with the given operation."""
@@ -81,6 +85,11 @@ class NodeGraph:
                         location: tuple = (0, 0)) -> bpy.types.Node:
         """Read a named attribute from the current geometry context."""
         return self.new("GeometryNodeInputNamedAttribute", location)
+
+    def attribute_statistic(self,
+                            location: tuple = (0, 0)) -> bpy.types.Node:
+        """Compute statistics (min, max, mean, etc.) of a named attribute."""
+        return self.new("GeometryNodeAttributeStatistic", location)
 
     def bounding_box(self, location: tuple = (0, 0)) -> bpy.types.Node:
         return self.new("GeometryNodeBoundBox", location)
