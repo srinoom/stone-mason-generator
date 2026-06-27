@@ -1,16 +1,15 @@
 """Composition layer -- orchestrates engine build order and interface.
 
-Pipeline (Step 11):
+Pipeline (Step 12):
 
     1. ParameterizeEngine  -- UVN coordinates + SurfaceContext
     2. SurfaceTopology     -- boundary/corner detection
     3. CourseEngine        -- course_index from v_coord
     4. CourseLayout        -- grid points from SurfaceContext bounds
     5. RunningBond         -- shift point positions
-    6. InstanceEngine      -- instance StonePrimitive, realize
+    6. InstanceEngine      -- Primitive + Modifier stack + Instance + Realize
 
-SurfaceContext flows from ParameterizeEngine → CourseLayout.
-Primitive sockets flow from InstanceEngine → interface.
+Primitive and modifier sockets flow from InstanceEngine → interface.
 """
 
 import bpy
@@ -25,6 +24,7 @@ from .layout import CourseLayout, LayoutStrategy
 from .bond import RunningBond
 from .instance import InstanceEngine
 from .primitive import RectangularBlock
+from .modifier import NoiseModifier
 
 
 class Composer:
@@ -104,7 +104,7 @@ def default_composer() -> Composer:
         3. CourseEngine        -- course_index from v_coord
         4. CourseLayout        -- grid from SurfaceContext bounds
         5. RunningBond         -- stagger odd courses
-        6. InstanceEngine      -- instance RectangularBlock, realize
+        6. InstanceEngine      -- RectangularBlock + NoiseModifier, realize
     """
     c = Composer()
     c.register_engine(ParameterizeEngine())
@@ -112,5 +112,9 @@ def default_composer() -> Composer:
     c.register_engine(CourseEngine())
     c.register_engine(CourseLayout())
     c.register_engine(RunningBond())
-    c.register_engine(InstanceEngine(primitive=RectangularBlock()))
+    c.register_engine(InstanceEngine(
+        primitive=RectangularBlock(),
+        modifiers=[NoiseModifier()],
+        realize=True,
+    ))
     return c

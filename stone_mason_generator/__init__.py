@@ -1,12 +1,12 @@
 """Stone Mason Generator -- main add-on module.
 
-Step 11: Stone Primitive Library.
+Step 12: Primitive/Modifier separation + configurable realize.
 """
 
 bl_info = {
     "name": "Stone Mason Generator",
     "author": "Boy + ChatGPT",
-    "version": (1, 2, 0),
+    "version": (1, 3, 0),
     "blender": (5, 1, 0),
     "location": "View3D > Sidebar > Stone",
     "description": "Generate procedural stone masonry from meshes.",
@@ -27,6 +27,7 @@ from .geometry import layout
 from .geometry import scatter
 from .geometry import bond
 from .geometry import primitive
+from .geometry import modifier
 from .geometry import instance
 from .geometry import nodes
 
@@ -41,6 +42,7 @@ modules = (
     scatter,
     bond,
     primitive,
+    modifier,
     instance,
     nodes,
     builder,

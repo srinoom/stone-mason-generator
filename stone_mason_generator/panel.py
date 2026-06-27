@@ -28,10 +28,14 @@ class VIEW3D_PT_stone_generator(bpy.types.Panel):
         box.prop(props, "bond_offset")
 
         box = layout.box()
-        box.label(text="Stone", icon='MESH_CUBE')
+        box.label(text="Stone Primitive", icon='MESH_CUBE')
         box.prop(props, "stone_height")
         box.prop(props, "stone_depth")
+
+        box = layout.box()
+        box.label(text="Surface Modifier", icon='MOD_NOISE')
         box.prop(props, "roughness")
+        box.prop(props, "noise_scale")
 
         layout.separator()
         layout.operator("stone.generate", icon="MOD_REMESH")

@@ -51,6 +51,7 @@ class NodeGroupManager:
             "Stone_Height":  props.stone_height,
             "Stone_Depth":   props.stone_depth,
             "Roughness":     props.roughness,
+            "Noise_Scale":   props.noise_scale,
             "Joint_Width":   props.joint_width,
             "Course_Height": props.course_height,
             "Bond_Offset":   props.bond_offset,

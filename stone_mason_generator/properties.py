@@ -68,12 +68,21 @@ class StoneProperties(bpy.types.PropertyGroup):
         max=5.0,
     )
 
+    # --- modifier: noise ---
     roughness: bpy.props.FloatProperty(
         name="Roughness",
-        description="Vertex displacement amount for rough stones (0 = smooth)",
+        description="Vertex displacement amount (0 = smooth block)",
         default=0.05,
         min=0.0,
         max=0.5,
+    )
+
+    noise_scale: bpy.props.FloatProperty(
+        name="Noise Scale",
+        description="Frequency of the displacement noise pattern",
+        default=5.0,
+        min=0.1,
+        max=50.0,
     )
 
 

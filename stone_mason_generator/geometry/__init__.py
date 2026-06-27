@@ -6,7 +6,8 @@ from .topology import SurfaceTopology
 from .course import CourseEngine
 from .layout import LayoutStrategy, CourseLayout, RandomScatter
 from .bond import BondPattern, RunningBond
-from .primitive import StonePrimitive, CubePrimitive, RectangularBlock, RoughBlock
+from .primitive import StonePrimitive, CubePrimitive, RectangularBlock
+from .modifier import StoneModifier, NoiseModifier
 from .instance import InstanceEngine
 from .scatter import LayoutStrategy as _ScatterCompat
 from .nodes import Composer, default_composer
