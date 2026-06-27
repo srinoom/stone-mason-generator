@@ -68,10 +68,10 @@ class StoneProperties(bpy.types.PropertyGroup):
         max=5.0,
     )
 
-    # --- modifier: noise ---
+    # --- modifiers ---
     roughness: bpy.props.FloatProperty(
         name="Roughness",
-        description="Vertex displacement amount (0 = smooth block)",
+        description="Surface noise displacement (0 = smooth)",
         default=0.05,
         min=0.0,
         max=0.5,
@@ -79,10 +79,34 @@ class StoneProperties(bpy.types.PropertyGroup):
 
     noise_scale: bpy.props.FloatProperty(
         name="Noise Scale",
-        description="Frequency of the displacement noise pattern",
+        description="Frequency of surface displacement noise",
         default=5.0,
         min=0.1,
         max=50.0,
+    )
+
+    edge_bevel: bpy.props.FloatProperty(
+        name="Edge Bevel",
+        description="Bevel all edges for worn look (0 = sharp)",
+        default=0.03,
+        min=0.0,
+        max=0.2,
+    )
+
+    size_variation: bpy.props.FloatProperty(
+        name="Size Variation",
+        description="Per-stone random size ± (0 = uniform)",
+        default=0.05,
+        min=0.0,
+        max=0.3,
+    )
+
+    corner_break: bpy.props.FloatProperty(
+        name="Corner Break",
+        description="Random corner displacement for chipped look (0 = sharp)",
+        default=0.02,
+        min=0.0,
+        max=0.2,
     )
 
 

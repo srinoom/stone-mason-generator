@@ -60,19 +60,20 @@ class NodeGraph:
         return self.new("GeometryNodeInputPosition", location)
 
     def input_normal(self, location: tuple = (0, 0)) -> bpy.types.Node:
-        """Read surface normal from current geometry context."""
         return self.new("GeometryNodeInputNormal", location)
+
+    def input_id(self, location: tuple = (0, 0)) -> bpy.types.Node:
+        """Read the stable per-element ID (integer)."""
+        return self.new("GeometryNodeInputID", location)
 
     def math(self, operation: str = 'ADD',
              location: tuple = (0, 0)) -> bpy.types.Node:
-        """Create a Math node (scalar) with the given operation."""
         n = self.new("ShaderNodeMath", location)
         n.operation = operation
         return n
 
     def vector_math(self, operation: str = 'ADD',
                     location: tuple = (0, 0)) -> bpy.types.Node:
-        """Create a Vector Math node with the given operation."""
         n = self.new("ShaderNodeVectorMath", location)
         n.operation = operation
         return n
@@ -83,46 +84,47 @@ class NodeGraph:
 
     def named_attribute(self,
                         location: tuple = (0, 0)) -> bpy.types.Node:
-        """Read a named attribute from the current geometry context."""
         return self.new("GeometryNodeInputNamedAttribute", location)
 
     def attribute_statistic(self,
                             location: tuple = (0, 0)) -> bpy.types.Node:
-        """Compute statistics (min, max, mean, etc.) of a named attribute."""
         return self.new("GeometryNodeAttributeStatistic", location)
 
     def bounding_box(self, location: tuple = (0, 0)) -> bpy.types.Node:
         return self.new("GeometryNodeBoundBox", location)
 
     def set_position(self, location: tuple = (0, 0)) -> bpy.types.Node:
-        """Modify position of geometry elements via offset or absolute."""
         return self.new("GeometryNodeSetPosition", location)
 
     def mesh_grid(self, location: tuple = (0, 0)) -> bpy.types.Node:
-        """Create a Mesh Grid primitive (XY plane, centered at origin)."""
         return self.new("GeometryNodeMeshGrid", location)
 
     def mesh_to_points(self, location: tuple = (0, 0)) -> bpy.types.Node:
-        """Convert mesh vertices/edges/faces to point cloud."""
         return self.new("GeometryNodeMeshToPoints", location)
 
     def transform_geometry(self, location: tuple = (0, 0)) -> bpy.types.Node:
-        """Transform geometry (translation, rotation, scale)."""
         return self.new("GeometryNodeTransform", location)
 
     def float_to_int(self, location: tuple = (0, 0)) -> bpy.types.Node:
-        """Convert float to integer with configurable rounding."""
         return self.new("FunctionNodeFloatToInt", location)
+
+    def noise_texture(self, location: tuple = (0, 0)) -> bpy.types.Node:
+        return self.new("ShaderNodeTexNoise", location)
+
+    def random_value(self, location: tuple = (0, 0)) -> bpy.types.Node:
+        """Random Value node — set data_type property after creation."""
+        return self.new("FunctionNodeRandomValue", location)
+
+    def subdivide_mesh(self, location: tuple = (0, 0)) -> bpy.types.Node:
+        return self.new("GeometryNodeSubdivideMesh", location)
 
     # -- generic node with params -----------------------------------------
 
     def node(self, node_type: str, location: tuple = (0, 0),
              label: Optional[str] = None,
              params: Optional[dict] = None) -> bpy.types.Node:
-        """Create a node and set input default values from *params*."""
         n = self.new(node_type, location, label=label)
         if params:
             for key, val in params.items():
                 n.inputs[key].default_value = val
         return n
-

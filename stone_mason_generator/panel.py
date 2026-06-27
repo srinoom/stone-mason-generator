@@ -33,9 +33,14 @@ class VIEW3D_PT_stone_generator(bpy.types.Panel):
         box.prop(props, "stone_depth")
 
         box = layout.box()
-        box.label(text="Surface Modifier", icon='MOD_NOISE')
-        box.prop(props, "roughness")
-        box.prop(props, "noise_scale")
+        box.label(text="Shape Modifiers", icon='MOD_NOISE')
+        col = box.column()
+        col.prop(props, "edge_bevel")
+        col.prop(props, "size_variation")
+        col.prop(props, "roughness")
+        col.prop(props, "noise_scale")
+        col.prop(props, "corner_break")
+        box.prop(props, "seed")
 
         layout.separator()
         layout.operator("stone.generate", icon="MOD_REMESH")

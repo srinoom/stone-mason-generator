@@ -1,12 +1,12 @@
 """Stone Mason Generator -- main add-on module.
 
-Step 13: Conditional modifiers + validation + robustness.
+Step 14: Stone Shape Generator — visible stone deformation.
 """
 
 bl_info = {
     "name": "Stone Mason Generator",
     "author": "Boy + ChatGPT",
-    "version": (1, 4, 0),
+    "version": (1, 5, 0),
     "blender": (5, 1, 0),
     "location": "View3D > Sidebar > Stone",
     "description": "Generate procedural stone masonry from meshes.",
@@ -27,6 +27,7 @@ from .geometry import layout
 from .geometry import scatter
 from .geometry import bond
 from .geometry import primitive
+from .geometry import modifier_base
 from .geometry import modifier
 from .geometry import instance
 from .geometry import nodes
@@ -42,6 +43,7 @@ modules = (
     scatter,
     bond,
     primitive,
+    modifier_base,
     modifier,
     instance,
     nodes,

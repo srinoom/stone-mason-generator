@@ -1,14 +1,15 @@
 """Composition layer -- orchestrates engine build order and interface.
 
-Pipeline (Step 13):
-    1. ParameterizeEngine  -- UVN + SurfaceContext
-    2. SurfaceTopology     -- boundaries + corners
-    3. CourseEngine        -- course_index from v_coord
-    4. CourseLayout        -- grid from SurfaceContext bounds
-    5. RunningBond         -- stagger odd courses
-    6. InstanceEngine      -- Primitive + conditional Modifier stack + Instance
+Pipeline (Step 14):
+    1. ParameterizeEngine
+    2. SurfaceTopology
+    3. CourseEngine
+    4. CourseLayout
+    5. RunningBond
+    6. InstanceEngine -- RectangularBlock + 4 modifier stack, realize
 
-Step 13: validation + conditional modifier generation.
+Modifiers applied (in order):
+    EdgeBevel → FaceIrregularity → NoiseModifier → CornerBreak
 """
 
 import bpy
@@ -23,7 +24,9 @@ from .layout import CourseLayout, LayoutStrategy
 from .bond import RunningBond
 from .instance import InstanceEngine
 from .primitive import RectangularBlock
-from .modifier import NoiseModifier, ModifierContext, ValidationReport
+from .modifier_base import ModifierContext, ValidationReport
+from .modifier import (NoiseModifier, EdgeBevelModifier,
+                       FaceIrregularity, CornerBreak)
 
 
 class Composer:
@@ -101,13 +104,11 @@ class Composer:
 def default_composer() -> Composer:
     """Return a Composer pre-loaded with the full pipeline.
 
-    Pipeline:
-        1. ParameterizeEngine  -- UVN + SurfaceContext
-        2. SurfaceTopology     -- boundaries + corners
-        3. CourseEngine        -- course_index from v_coord
-        4. CourseLayout        -- grid from SurfaceContext bounds
-        5. RunningBond         -- stagger odd courses
-        6. InstanceEngine      -- RectangularBlock + [NoiseModifier], realize
+    Modifier stack order:
+        1. EdgeBevel     — bevel edges (needs original mesh)
+        2. FaceIrregularity — per-face random scale variation
+        3. NoiseModifier — surface roughness displacement
+        4. CornerBreak   — chipped corners
     """
     c = Composer()
     c.register_engine(ParameterizeEngine())
@@ -117,7 +118,12 @@ def default_composer() -> Composer:
     c.register_engine(RunningBond())
     c.register_engine(InstanceEngine(
         primitive=RectangularBlock(),
-        modifiers=[NoiseModifier()],
+        modifiers=[
+            EdgeBevelModifier(),
+            FaceIrregularity(),
+            NoiseModifier(),
+            CornerBreak(),
+        ],
         realize=True,
     ))
     return c
