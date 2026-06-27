@@ -86,7 +86,7 @@ class Composer:
                    go.inputs["Geometry"])
 
     def _ensure_interface(self, group: bpy.types.NodeTree) -> None:
-        existing = {s.name for s in group.interface.items_tree
+        existing = {s.name for s in group.interface.items_tree()
                     if s.item_type == 'SOCKET'}
 
         for name, in_out, sock_type, default in self.all_sockets():
@@ -127,4 +127,5 @@ def default_composer() -> Composer:
         realize=True,
     ))
     return c
+
 
