@@ -86,19 +86,25 @@ class Composer:
                    go.inputs["Geometry"])
 
     def _ensure_interface(self, group: bpy.types.NodeTree) -> None:
-        existing = {s.name for s in group.interface.items_tree()
-                    if s.item_type == 'SOCKET'}
+        # Clear all existing interface items, then recreate fresh.
+        # This avoids API differences between Blender versions for
+        # iterating interface items (items vs items_tree vs items_tree()).
+        try:
+            group.interface.clear()
+        except Exception:
+            pass
 
         for name, in_out, sock_type, default in self.all_sockets():
-            if name in existing:
-                continue
-            sock = group.interface.new_socket(
-                name=name,
-                in_out=in_out,
-                socket_type=sock_type,
-            )
-            if default is not None:
-                sock.default_value = default
+            try:
+                sock = group.interface.new_socket(
+                    name=name,
+                    in_out=in_out,
+                    socket_type=sock_type,
+                )
+                if default is not None:
+                    sock.default_value = default
+            except Exception:
+                pass
 
 
 def default_composer() -> Composer:
@@ -127,5 +133,6 @@ def default_composer() -> Composer:
         realize=True,
     ))
     return c
+
 
 
