@@ -1,43 +1,39 @@
-"""Course Engine -- generates horizontal masonry courses on a mesh.
+"""Course Engine -- generates horizontal masonry courses.
 
-Pipeline stage (runs BEFORE ScatterEngine):
+Refactored in Step 7 to use a WallFrame for coordinate abstraction.
+CourseEngine no longer reads world-space Z directly — it asks the
+WallFrame for the wall-local vertical (V) coordinate.
 
-    Input Mesh
-      → Bounding Box (wall orientation detection)
-      → Position → Separate XYZ → Z
-      → Z / Course Height → Floor → course_index
-      → Store course_index  (attribute, POINT domain)
-      → course_index * Course Height → course_base_z
-      → Store course_base_z (attribute, POINT domain)
-      → Output Mesh (with course attributes)
-
-Every vertex on the mesh receives a course_index and course_base_z.
-When ScatterEngine distributes points on faces, the face attributes
-transfer to the generated points, so every scattered point belongs
-to a course.
-
-Wall orientation: Z-axis is assumed as the vertical (height) direction,
-which is the standard Blender convention.  The Bounding Box node is
-wired so future steps can auto-detect the up axis from dimensions.
+This means the same CourseEngine works on flat, sloped, and curved
+walls without modification — only the WallFrame implementation changes.
 """
 
 import bpy
 from typing import List, Tuple
 
 from .graph import NodeGraph
+from .wall_frame import WallFrame, ZUpFrame
 
 
 class CourseEngine:
-    """Divides a mesh into horizontal courses based on Z-position.
+    """Divides a mesh into horizontal courses based on wall-local height.
 
-    Exposes Course Height as an interface socket so the user can
-    control course spacing from the panel.
+    The vertical coordinate comes from a WallFrame, not from world Z.
     """
 
     # (name, in_out, socket_type, default_value)
     SOCKETS: List[Tuple[str, str, str, object]] = [
         ("Course Height", "INPUT", "NodeSocketFloat", 0.5),
     ]
+
+    def __init__(self, frame: WallFrame = None):
+        """Use *frame* for coordinate conversion, or Z-up by default."""
+        self.frame = frame or ZUpFrame()
+
+    @property
+    def frame_sockets(self) -> List[Tuple[str, str, str, object]]:
+        """Sockets required by the WallFrame implementation."""
+        return self.frame.SOCKETS
 
     def build(self, graph: NodeGraph,
               group_input: bpy.types.Node,
@@ -49,19 +45,15 @@ class CourseEngine:
         """
         g = graph
 
-        # --- wall orientation: bounding box (for future auto-detect) ---
-        # Wired but not yet used to drive the up axis.
-        # Z-up is assumed for standard Blender walls.
-        bbox = g.bounding_box(location=(-500, -400))
-        g.link(prev_geometry.outputs[0], bbox.inputs[0])
+        # --- wall-local height (V) from WallFrame ---
+        v_node = self.frame.build_v(g, group_input, prev_geometry)
 
-        # --- course_index = floor(position.z / course_height) ---
-        pos = g.position(location=(-450, 150))
-        sep = g.separate_xyz(location=(-350, 150))
-        g.link(pos.outputs[0], sep.inputs["Vector"])
+        # v_node is a SeparateXYZ node; its "Z" output is the height scalar.
+        # This abstraction lets WallFrame swap Z-up for any other axis/frame.
 
+        # --- course_index = floor(V / course_height) ---
         div = g.math('DIVIDE', location=(-250, 150))
-        g.link(sep.outputs["Z"], div.inputs[0])
+        g.link(v_node.outputs["Z"], div.inputs[0])
         g.link(group_input.outputs["Course Height"], div.inputs[1])
 
         floor = g.math('FLOOR', location=(-150, 150))
@@ -75,16 +67,16 @@ class CourseEngine:
         g.link(prev_geometry.outputs[0], store_idx.inputs[0])
         g.link(floor.outputs[0], store_idx.inputs["Value"])
 
-        # --- course_base_z = course_index * course_height ---
+        # --- course_base_v = course_index * course_height ---
         mul = g.math('MULTIPLY', location=(50, 80))
         g.link(floor.outputs[0], mul.inputs[0])
         g.link(group_input.outputs["Course Height"], mul.inputs[1])
 
-        # --- store course_base_z on POINT domain ---
+        # --- store course_base_v on POINT domain ---
         store_base = g.store_named_attribute(location=(150, 150))
         store_base.data_type = 'FLOAT'
         store_base.domain = 'POINT'
-        store_base.inputs["Name"].default_value = "course_base_z"
+        store_base.inputs["Name"].default_value = "course_base_v"
         g.link(store_idx.outputs[0], store_base.inputs[0])
         g.link(mul.outputs[0], store_base.inputs["Value"])
 

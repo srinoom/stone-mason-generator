@@ -38,7 +38,8 @@ class Composer:
         """Register a pipeline stage.
 
         engine must expose:
-            SOCKETS  -- list of (name, in_out, socket_type, default)
+            SOCKETS        -- list of (name, in_out, socket_type, default)
+            frame_sockets  -- optional, list of same tuple shape (can be [])
             build(graph, group_input, prev_geometry) -> node
         """
         self._engines.append(engine)
@@ -46,10 +47,13 @@ class Composer:
     # -- interface management ---------------------------------------------
 
     def all_sockets(self) -> List[Tuple[str, str, str, object]]:
-        """Return the complete socket list: base + all engine sockets."""
+        """Return the complete socket list: base + engine + frame sockets."""
         sockets = list(self.BASE_SOCKETS)
         for engine in self._engines:
             sockets.extend(engine.SOCKETS)
+            # Merge frame sockets if the engine declares them
+            frame_sockets = getattr(engine, 'frame_sockets', [])
+            sockets.extend(frame_sockets)
         return sockets
 
     # -- build -------------------------------------------------------------
@@ -96,11 +100,11 @@ def default_composer() -> Composer:
     """Return a Composer pre-loaded with the current pipeline engines.
 
     Pipeline order:
-        1. CourseEngine  -- assign course_index to every vertex
+        1. CourseEngine  -- assign course_index using WallFrame
         2. ScatterEngine -- distribute stones on faces (inherits courses)
     """
     c = Composer()
-    c.register_engine(CourseEngine())
+    c.register_engine(CourseEngine())  # defaults to ZUpFrame
     c.register_engine(ScatterEngine())
     return c
 

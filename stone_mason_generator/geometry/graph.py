@@ -65,8 +65,15 @@ class NodeGraph:
 
     def math(self, operation: str = 'ADD',
              location: tuple = (0, 0)) -> bpy.types.Node:
-        """Create a Math node with the given operation."""
+        """Create a Math node (scalar) with the given operation."""
         n = self.new("ShaderNodeMath", location)
+        n.operation = operation
+        return n
+
+    def vector_math(self, operation: str = 'ADD',
+                    location: tuple = (0, 0)) -> bpy.types.Node:
+        """Create a Vector Math node with the given operation."""
+        n = self.new("ShaderNodeVectorMath", location)
         n.operation = operation
         return n
 
