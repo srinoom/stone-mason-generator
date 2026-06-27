@@ -1,25 +1,28 @@
+"""Stone Mason Generator -- main add-on module.
+
+Step 4: Graph API refactor + Scatter Engine base layer.
+"""
+
 bl_info = {
     "name": "Stone Mason Generator",
     "author": "Boy + ChatGPT",
-    "version": (0, 1, 0),
+    "version": (0, 5, 0),
     "blender": (5, 1, 0),
     "location": "View3D > Sidebar > Stone",
-    "description": "Generate procedural stacked stone from meshes.",
+    "description": "Generate procedural stone masonry from meshes.",
     "category": "Object",
 }
-
-import importlib
 
 from . import properties
 from . import operators
 from . import panel
 from .geometry import builder
-from .geometry import nodes
 from .geometry import graph
+from .geometry import scatter
 
 modules = (
     graph,
-    nodes,
+    scatter,
     builder,
     properties,
     operators,
@@ -28,17 +31,12 @@ modules = (
 
 
 def register():
-
-    for m in modules:
-        importlib.reload(m)
-
     properties.register()
     operators.register()
     panel.register()
 
 
 def unregister():
-
     panel.unregister()
     operators.unregister()
     properties.unregister()
@@ -46,3 +44,4 @@ def unregister():
 
 if __name__ == "__main__":
     register()
+

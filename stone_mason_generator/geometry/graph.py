@@ -1,98 +1,83 @@
+"""Low-level Geometry Node tree builder API.
+
+This module provides a thin wrapper around Blender's bpy node-group API,
+giving every node-creation call a clean, consistent signature.
+No business logic lives here -- higher-level engines (scatter.py, etc.)
+compose these primitives into useful node trees.
+"""
+
 import bpy
-print("GRAPH FILE =", __file__)
+from typing import Optional
+
 
 class NodeGraph:
+    """Wrapper around a Geometry Node group for clean node/link creation."""
 
-    def __init__(self, group):
-
+    def __init__(self, group: bpy.types.NodeTree):
         self.group = group
         self.nodes = group.nodes
         self.links = group.links
 
-    # ---------------------------------
+    # -- core operations ---------------------------------------------------
 
-    def clear(self):
-
+    def clear(self) -> None:
+        """Remove every node in the group."""
         self.nodes.clear()
 
-    # ---------------------------------
-
-    def new(self, node_type, location=(0, 0)):
-
-        print(f"[SMG] Create {node_type}")
+    def new(self, node_type: str, location: tuple = (0, 0),
+            label: Optional[str] = None) -> bpy.types.Node:
+        """Create a node of *node_type* at *location*."""
         node = self.nodes.new(node_type)
         node.location = location
+        if label:
+            node.label = label
         return node
 
-    # ---------------------------------
+    def link(self, out_socket: bpy.types.NodeSocket,
+             in_socket: bpy.types.NodeSocket) -> None:
+        """Connect *out_socket* to *in_socket*."""
+        self.links.new(out_socket, in_socket)
 
-    def link(self, output_socket, input_socket):
-        
-        print(
-        f"[SMG] Link : {output_socket.name} -> {input_socket.name}"
-    )
+    def link_chain(self, *pairs) -> None:
+        """Link multiple (out_socket, in_socket) pairs in one call."""
+        for out_sock, in_sock in pairs:
+            self.link(out_sock, in_sock)
 
-        self.links.new(output_socket, input_socket)
+    # -- convenience factories --------------------------------------------
 
-    # ---------------------------------
+    def group_input(self, location: tuple = (-800, 0)) -> bpy.types.Node:
+        return self.new("NodeGroupInput", location)
 
-    def input(self):
+    def group_output(self, location: tuple = (800, 0)) -> bpy.types.Node:
+        return self.new("NodeGroupOutput", location)
 
-        return self.new(
-            "NodeGroupInput",
-            (-500, 0)
-        )
+    def transform(self, location: tuple = (-400, 0)) -> bpy.types.Node:
+        return self.new("GeometryNodeTransform", location)
 
-    # ---------------------------------
+    def mesh_to_points(self, location: tuple = (0, 0)) -> bpy.types.Node:
+        return self.new("GeometryNodeMeshToPoints", location)
 
-    def output(self):
+    def instance_on_points(self, location: tuple = (300, 0)) -> bpy.types.Node:
+        return self.new("GeometryNodeInstanceOnPoints", location)
 
-        return self.new(
-            "NodeGroupOutput",
-            (500, 0)
-        )
+    def realize_instances(self, location: tuple = (600, 0)) -> bpy.types.Node:
+        return self.new("GeometryNodeRealizeInstances", location)
 
-    # ---------------------------------
+    def cube(self, location: tuple = (300, -300)) -> bpy.types.Node:
+        return self.new("GeometryNodeMeshCube", location)
 
-    def transform(self):
+    # -- generic node with params -----------------------------------------
 
-        return self.new(
-            "GeometryNodeTransform",
-            (0, 0)
-        )
-    
-    # ---------------------------------
+    def node(self, node_type: str, location: tuple = (0, 0),
+             label: Optional[str] = None,
+             params: Optional[dict] = None) -> bpy.types.Node:
+        """Create a node and set input default values from *params* dict.
 
-    def mesh_to_points(self):
+        ``params`` maps socket names (str) or indices (int) to values.
+        """
+        n = self.new(node_type, location, label=label)
+        if params:
+            for key, val in params.items():
+                n.inputs[key].default_value = val
+        return n
 
-        return self.new(
-            "GeometryNodeMeshToPoints",
-            (250, 0),
-        )
-
-    # ---------------------------------
-
-    def instance_on_points(self):
-
-        return self.new(
-            "GeometryNodeInstanceOnPoints",
-            (550, 0),
-        )
-
-    # ---------------------------------
-
-    def realize_instances(self):
-
-        return self.new(
-            "GeometryNodeRealizeInstances",
-            (850, 0),
-        )
-
-    # ---------------------------------
-
-    def cube(self):
-
-        return self.new(
-            "GeometryNodeMeshCube",
-            (250, -250),
-        )

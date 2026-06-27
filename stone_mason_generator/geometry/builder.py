@@ -1,58 +1,74 @@
+"""Node-group and modifier lifecycle management.
+
+Single entry point for operators: :meth:`NodeGroupManager.apply`.
+Handles node-group creation/reuse, interface setup, and modifier wiring.
+"""
+
 import bpy
 
-from .nodes import build_basic_nodes
-
-NODE_GROUP_NAME = "SMG_StoneGenerator"
-
-
-def get_or_create_node_group():
-
-    group = bpy.data.node_groups.get(NODE_GROUP_NAME)
-
-    if group is None:
-
-        print("[SMG] Create Node Group")
-
-        group = bpy.data.node_groups.new(
-            NODE_GROUP_NAME,
-            "GeometryNodeTree"
-        )
-
-        group.interface.new_socket(
-            name="Geometry",
-            in_out='INPUT',
-            socket_type="NodeSocketGeometry"
-        )
-
-        group.interface.new_socket(
-            name="Geometry",
-            in_out='OUTPUT',
-            socket_type="NodeSocketGeometry"
-        )
-
-    print("[SMG] Build Node Tree")
-
-    build_basic_nodes(group)
-
-    return group
+from .graph import NodeGraph
+from .scatter import ScatterEngine
 
 
-def add_modifier(obj):
+class NodeGroupManager:
+    """Create or reuse the scatter-engine node group and apply it as a modifier."""
 
-    modifier = obj.modifiers.get(NODE_GROUP_NAME)
+    GROUP_NAME = ScatterEngine.GROUP_NAME
 
-    if modifier is None:
+    @classmethod
+    def get_or_create_group(cls) -> bpy.types.NodeTree:
+        """Return the SMG node group, creating it if necessary."""
+        group = bpy.data.node_groups.get(cls.GROUP_NAME)
 
-        print("[SMG] Create Modifier")
+        if group is None:
+            group = bpy.data.node_groups.new(
+                cls.GROUP_NAME,
+                "GeometryNodeTree",
+            )
 
-        modifier = obj.modifiers.new(
-            NODE_GROUP_NAME,
-            "NODES"
-        )
+        engine = ScatterEngine(group)
+        engine.build()
+        return group
 
-    modifier.node_group = get_or_create_node_group()
+    @classmethod
+    def apply(cls, obj: bpy.types.Object, props) -> bpy.types.Modifier:
+        """Add (or refresh) the scatter modifier on *obj*.
 
-    print("[SMG] Modifier Assigned")
-    print(__file__)
+        ``props`` is a :class:`StoneProperties` instance; its fields are
+        pushed into the modifier socket defaults.
+        """
+        group = cls.get_or_create_group()
 
-    return modifier
+        modifier = obj.modifiers.get(cls.GROUP_NAME)
+        if modifier is None:
+            modifier = obj.modifiers.new(cls.GROUP_NAME, "NODES")
+        modifier.node_group = group
+
+        # Push property values → modifier socket defaults
+        cls._sync_props(modifier, props)
+
+        return modifier
+
+    # -- private -----------------------------------------------------------
+
+    @staticmethod
+    def _sync_props(modifier: bpy.types.Modifier, props) -> None:
+        """Copy StoneProperties fields into the modifier's input sockets."""
+        mapping = {
+            "Density":      props.density,
+            "Seed":         props.seed,
+            "Stone Width":  props.stone_width,
+            "Stone Height": props.stone_height,
+        }
+        # Modifier socket identifiers follow the interface socket names
+        # for simple names (no spaces replaced in 4.x/5.x).
+        for name, value in mapping.items():
+            try:
+                modifier[f"{name.replace(' ', '_')}_"] = value
+            except KeyError:
+                # identifier fallback -- try direct name
+                try:
+                    modifier[name] = value
+                except KeyError:
+                    pass
+
