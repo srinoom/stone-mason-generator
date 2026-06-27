@@ -5,7 +5,7 @@ from .geometry.builder import add_modifier
 class STONE_OT_generate(bpy.types.Operator):
 
     bl_idname = "stone.generate"
-    bl_label = "Generate"
+    bl_label = "Generate TEST"
     bl_options = {'REGISTER', 'UNDO'}
 
     def execute(self, context):
