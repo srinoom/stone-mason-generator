@@ -101,7 +101,7 @@ class SurfaceContext:
 
         # --- store n_coord ---
         store_n = g.store_named_attribute(location=(0, -50))
-        store_n.data_type = 'VECTOR'
+        store_n.data_type = 'FLOAT_VECTOR'
         store_n.domain = 'POINT'
         store_n.inputs["Name"].default_value = "n_coord"
         g.link(store_v.outputs[0], store_n.inputs["Geometry"])
@@ -142,3 +142,4 @@ class SurfaceContext:
         ctx.height = height
 
         return ctx
+

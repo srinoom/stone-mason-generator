@@ -100,7 +100,7 @@ class RunningBond(BondPattern):
         g = graph
 
         # --- course_index % 2 → 0 (even) or 1 (odd) ---
-        modulo = g.math('MODULE', location=(-200, 0))
+        modulo = g.math('MODULO', location=(-200, 0))
         modulo.inputs[1].default_value = 2.0
         g.link(course_index_node.outputs["Attribute"], modulo.inputs[0])
 
@@ -110,4 +110,5 @@ class RunningBond(BondPattern):
         g.link(group_input.outputs["Bond Offset"], mul.inputs[1])
 
         return mul
+
 
