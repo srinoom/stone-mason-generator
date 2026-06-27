@@ -118,7 +118,7 @@ class CourseLayout(LayoutStrategy):
 
         # --- mesh vertices → points ---
         mtp = g.mesh_to_points(location=(300, 0))
-        mtp.inputs["Mode"].default_value = 'VERTICES'  # type: ignore[assignment]
+        mtp.mode = 'VERTICES'  # type: ignore[assignment]
         g.link(transform.outputs["Geometry"], mtp.inputs["Mesh"])
 
         # --- course_index from position.z ---
@@ -169,4 +169,5 @@ class RandomScatter(LayoutStrategy):
                distribute.inputs["Seed"])
 
         return distribute
+
 
