@@ -53,5 +53,6 @@ def add_modifier(obj):
     modifier.node_group = get_or_create_node_group()
 
     print("[SMG] Modifier Assigned")
+    print(__file__)
 
     return modifier

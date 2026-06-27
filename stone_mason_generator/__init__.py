@@ -14,8 +14,12 @@ from . import properties
 from . import operators
 from . import panel
 from .geometry import builder
+from .geometry import nodes
+from .geometry import graph
 
 modules = (
+    graph,
+    nodes,
     builder,
     properties,
     operators,

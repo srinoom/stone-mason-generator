@@ -1,42 +1,69 @@
-import math
-
-
 def build_basic_nodes(group):
-    """
-    Rebuild the entire node tree.
-    """
+    import math
+    print("NODES FILE =", __file__)
 
-    nodes = group.nodes
-    links = group.links
+    print("STEP 1")
 
-    # Clear existing nodes
-    nodes.clear()
+    graph = NodeGraph(group)
 
-    # Create nodes
-    group_input = nodes.new("NodeGroupInput")
-    transform = nodes.new("GeometryNodeTransform")
-    group_output = nodes.new("NodeGroupOutput")
+    print("STEP 2")
 
-    group_input.location = (-400, 0)
-    transform.location = (0, 0)
-    group_output.location = (350, 0)
+    graph.clear()
 
-    # Rotate 10 degrees on Z
+    print("STEP 3")
+
+    group_input = graph.input()
+
+    transform = graph.transform()
+
+    mesh_to_points = graph.mesh_to_points()
+
+    cube = graph.cube()
+
+    instance = graph.instance_on_points()
+
+    realize = graph.realize_instances()
+
+    group_output = graph.output()
+
+    print("STEP 4")
+
     transform.inputs["Rotation"].default_value = (
-        0.0,
-        0.0,
+        0,
+        0,
         math.radians(10)
     )
 
-    # Link nodes
-    links.new(
+    print("STEP 5")
+
+    graph.link(
         group_input.outputs["Geometry"],
-        transform.inputs["Geometry"]
+        transform.inputs["Geometry"],
     )
 
-    links.new(
+    graph.link(
         transform.outputs["Geometry"],
-        group_output.inputs["Geometry"]
+        mesh_to_points.inputs["Mesh"],
     )
 
-    print("[SMG] Node tree rebuilt.")
+    graph.link(
+        mesh_to_points.outputs["Points"],
+        instance.inputs["Points"],
+    )
+
+    graph.link(
+        cube.outputs["Mesh"],
+        instance.inputs["Instance"],
+    )
+
+    graph.link(
+        instance.outputs["Instances"],
+        realize.inputs["Geometry"],
+    )
+
+    graph.link(
+        realize.outputs["Geometry"],
+        group_output.inputs["Geometry"],
+    )
+
+    print("STEP 6")
