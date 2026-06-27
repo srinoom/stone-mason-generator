@@ -15,7 +15,11 @@ class VIEW3D_PT_stone_generator(bpy.types.Panel):
         props = context.scene.stone_generator
 
         box = layout.box()
-        box.label(text="Scatter Settings", icon='OUTLINER_OB_GROUP_INSTANCE')
+        box.label(text="Courses", icon='LINENUMBERS_ON')
+        box.prop(props, "course_height")
+
+        box = layout.box()
+        box.label(text="Scatter", icon='OUTLINER_OB_GROUP_INSTANCE')
         box.prop(props, "seed")
         box.prop(props, "density")
         box.prop(props, "stone_width")

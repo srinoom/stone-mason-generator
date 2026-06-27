@@ -5,7 +5,7 @@ The Composer is the single place that knows:
   - what order they run in
   - which interface sockets the group needs
 
-Engines (ScatterEngine, future CourseEngine, StoneEngine, SolverEngine)
+Engines (CourseEngine, ScatterEngine, future StoneEngine, SolverEngine)
 declare their socket requirements via ``SOCKETS`` and expose a
 ``build(graph, group_input, prev_geometry) -> node`` method.
 
@@ -16,6 +16,7 @@ import bpy
 from typing import List, Tuple
 
 from .graph import NodeGraph
+from .course import CourseEngine
 from .scatter import ScatterEngine
 
 
@@ -68,7 +69,7 @@ class Composer:
             prev = engine.build(graph, gi, prev)
 
         # Final output
-        go = graph.group_output(location=(600, 0))
+        go = graph.group_output(location=(800, 0))
         graph.link(prev.outputs["Geometry"],
                    go.inputs["Geometry"])
 
@@ -92,8 +93,14 @@ class Composer:
 
 
 def default_composer() -> Composer:
-    """Return a Composer pre-loaded with the current pipeline engines."""
+    """Return a Composer pre-loaded with the current pipeline engines.
+
+    Pipeline order:
+        1. CourseEngine  -- assign course_index to every vertex
+        2. ScatterEngine -- distribute stones on faces (inherits courses)
+    """
     c = Composer()
+    c.register_engine(CourseEngine())
     c.register_engine(ScatterEngine())
     return c
 

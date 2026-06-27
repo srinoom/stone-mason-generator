@@ -1,12 +1,12 @@
 """Stone Mason Generator -- main add-on module.
 
-Step 5: Real Scatter Engine with Composer layer.
+Step 6: Course Generator + Scatter Engine in Composer pipeline.
 """
 
 bl_info = {
     "name": "Stone Mason Generator",
     "author": "Boy + ChatGPT",
-    "version": (0, 6, 0),
+    "version": (0, 7, 0),
     "blender": (5, 1, 0),
     "location": "View3D > Sidebar > Stone",
     "description": "Generate procedural stone masonry from meshes.",
@@ -18,11 +18,13 @@ from . import operators
 from . import panel
 from .geometry import builder
 from .geometry import graph
+from .geometry import course
 from .geometry import scatter
 from .geometry import nodes
 
 modules = (
     graph,
+    course,
     scatter,
     nodes,
     builder,

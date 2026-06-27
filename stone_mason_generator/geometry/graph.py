@@ -19,12 +19,10 @@ class NodeGraph:
     # -- core operations ---------------------------------------------------
 
     def clear(self) -> None:
-        """Remove every node in the group."""
         self.nodes.clear()
 
     def new(self, node_type: str, location: tuple = (0, 0),
             label: Optional[str] = None) -> bpy.types.Node:
-        """Create a node of *node_type* at *location*."""
         node = self.nodes.new(node_type)
         node.location = location
         if label:
@@ -33,7 +31,6 @@ class NodeGraph:
 
     def link(self, out_socket: bpy.types.NodeSocket,
              in_socket: bpy.types.NodeSocket) -> None:
-        """Connect *out_socket* to *in_socket*."""
         self.links.new(out_socket, in_socket)
 
     # -- convenience factories --------------------------------------------
@@ -41,7 +38,7 @@ class NodeGraph:
     def group_input(self, location: tuple = (-800, 0)) -> bpy.types.Node:
         return self.new("NodeGroupInput", location)
 
-    def group_output(self, location: tuple = (600, 0)) -> bpy.types.Node:
+    def group_output(self, location: tuple = (800, 0)) -> bpy.types.Node:
         return self.new("NodeGroupOutput", location)
 
     def realize_instances(self, location: tuple = (300, 0)) -> bpy.types.Node:
@@ -60,15 +57,32 @@ class NodeGraph:
     def combine_xyz(self, location: tuple = (-200, -300)) -> bpy.types.Node:
         return self.new("ShaderNodeCombineXYZ", location)
 
+    def separate_xyz(self, location: tuple = (0, 0)) -> bpy.types.Node:
+        return self.new("ShaderNodeSeparateXYZ", location)
+
+    def position(self, location: tuple = (0, 0)) -> bpy.types.Node:
+        return self.new("GeometryNodeInputPosition", location)
+
+    def math(self, operation: str = 'ADD',
+             location: tuple = (0, 0)) -> bpy.types.Node:
+        """Create a Math node with the given operation."""
+        n = self.new("ShaderNodeMath", location)
+        n.operation = operation
+        return n
+
+    def store_named_attribute(self,
+                              location: tuple = (0, 0)) -> bpy.types.Node:
+        return self.new("GeometryNodeStoreNamedAttribute", location)
+
+    def bounding_box(self, location: tuple = (0, 0)) -> bpy.types.Node:
+        return self.new("GeometryNodeBoundBox", location)
+
     # -- generic node with params -----------------------------------------
 
     def node(self, node_type: str, location: tuple = (0, 0),
              label: Optional[str] = None,
              params: Optional[dict] = None) -> bpy.types.Node:
-        """Create a node and set input default values from *params*.
-
-        ``params`` maps socket names (str) or indices (int) to values.
-        """
+        """Create a node and set input default values from *params*."""
         n = self.new(node_type, location, label=label)
         if params:
             for key, val in params.items():

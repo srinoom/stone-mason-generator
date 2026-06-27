@@ -1,15 +1,15 @@
 """Scatter Engine -- distributes stone instances on a mesh surface.
 
 Pipeline:
-    Input Geometry
+    Input Geometry (with course attributes from CourseEngine)
       → Distribute Points on Faces (density-driven)
       → Instance Mesh Cube (stone prototype)
       → Realize Instances
       → Output Geometry
 
-This is Step 5. Stone shaping, course generation, and physics
-relaxation are NOT implemented here -- future engines will plug
-into the Composer alongside this one.
+ScatterEngine is unchanged from Step 5. It does not know about courses
+directly — face attributes from CourseEngine transfer to generated
+points automatically by Blender's geometry-node attribute propagation.
 """
 
 import bpy
@@ -19,11 +19,7 @@ from .graph import NodeGraph
 
 
 class ScatterEngine:
-    """Distributes stone instances across a mesh surface.
-
-    The engine declares its required interface sockets via :attr:`SOCKETS`
-    so the Composer can build a unified node-group interface.
-    """
+    """Distributes stone instances across a mesh surface."""
 
     # (name, in_out, socket_type, default_value)
     SOCKETS: List[Tuple[str, str, str, object]] = [
@@ -50,7 +46,6 @@ class ScatterEngine:
 
         # --- distribute points on faces ---
         distribute = g.distribute_points_on_faces(location=(-400, 0))
-        # Default to RANDOM distribution mode
         distribute.distribute_method = 'RANDOM'  # type: ignore[assignment]
 
         g.link(prev_geometry.outputs["Geometry"],

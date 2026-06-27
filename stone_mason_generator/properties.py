@@ -15,7 +15,7 @@ class StoneProperties(bpy.types.PropertyGroup):
     density: bpy.props.FloatProperty(
         name="Density",
         description="Point density on the surface",
-        default=40.0,
+        default=50.0,
         min=0.0,
         max=500.0,
     )
@@ -31,6 +31,14 @@ class StoneProperties(bpy.types.PropertyGroup):
         name="Stone Height",
         default=0.25,
         min=0.01,
+        max=5.0,
+    )
+
+    course_height: bpy.props.FloatProperty(
+        name="Course Height",
+        description="Height of each masonry course (row)",
+        default=0.50,
+        min=0.05,
         max=5.0,
     )
 
