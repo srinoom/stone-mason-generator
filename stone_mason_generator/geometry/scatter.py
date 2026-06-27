@@ -1,55 +1,17 @@
-"""Scatter Engine -- distributes points on a mesh surface.
+"""Scatter Engine -- delegates to LayoutStrategy for point generation.
 
-Refactored in Step 8 architecture review:
-  - ScatterEngine now ONLY distributes points (no instance/realize)
-  - InstanceEngine handles instancing and realization
-  - This lets BondEngine shift point positions BEFORE stones are placed
+Refactored in Step 9: ScatterEngine is no longer a pipeline stage.
+It becomes a thin wrapper that delegates to a LayoutStrategy.
 
-Pipeline:
-    Input Geometry (with course_index from CourseEngine)
-      → Distribute Points on Faces (density-driven)
-      → Output Points (course_index transfers via attribute interpolation)
+The Composer pipeline now calls LayoutStrategy.build() directly.
+This module remains for backward compatibility and re-exports.
+
+Historical: ScatterEngine previously contained Distribute Points on
+Faces logic. That logic is now in RandomScatter (a LayoutStrategy).
 """
 
-import bpy
-from typing import List, Tuple
+from .layout import LayoutStrategy, CourseLayout, RandomScatter
 
-from .graph import NodeGraph
-
-
-class ScatterEngine:
-    """Distributes points across a mesh surface.
-
-    Returns a Points geometry — does NOT instance or realize.
-    Downstream engines (BondEngine, InstanceEngine) operate on
-    these points.
-    """
-
-    # (name, in_out, socket_type, default_value)
-    SOCKETS: List[Tuple[str, str, str, object]] = [
-        ("Density", "INPUT", "NodeSocketFloat", 50.0),
-        ("Seed",    "INPUT", "NodeSocketInt",   0),
-    ]
-
-    def build(self, graph: NodeGraph,
-              group_input: bpy.types.Node,
-              prev_geometry: bpy.types.Node) -> bpy.types.Node:
-        """Build the point-distribution sub-tree.
-
-        Returns the Distribute Points node whose ``Points`` output
-        carries course_index (transferred from mesh faces).
-        """
-        g = graph
-
-        distribute = g.distribute_points_on_faces(location=(-400, 0))
-        distribute.distribute_method = 'RANDOM'  # type: ignore[assignment]
-
-        g.link(prev_geometry.outputs["Geometry"],
-               distribute.inputs["Mesh"])
-        g.link(group_input.outputs["Density"],
-               distribute.inputs["Density"])
-        g.link(group_input.outputs["Seed"],
-               distribute.inputs["Seed"])
-
-        return distribute
+# Re-export for external imports
+__all__ = ['LayoutStrategy', 'CourseLayout', 'RandomScatter']
 

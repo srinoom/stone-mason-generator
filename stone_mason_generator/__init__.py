@@ -1,12 +1,12 @@
 """Stone Mason Generator -- main add-on module.
 
-Step 8: Bond Pattern + architecture refactor (Pipeline B).
+Step 9: Layout-based deterministic point generation (CourseLayout).
 """
 
 bl_info = {
     "name": "Stone Mason Generator",
     "author": "Boy + ChatGPT",
-    "version": (0, 9, 0),
+    "version": (1, 0, 0),
     "blender": (5, 1, 0),
     "location": "View3D > Sidebar > Stone",
     "description": "Generate procedural stone masonry from meshes.",
@@ -20,6 +20,7 @@ from .geometry import builder
 from .geometry import graph
 from .geometry import wall_frame
 from .geometry import course
+from .geometry import layout
 from .geometry import scatter
 from .geometry import bond
 from .geometry import instance
@@ -29,6 +30,7 @@ modules = (
     graph,
     wall_frame,
     course,
+    layout,
     scatter,
     bond,
     instance,

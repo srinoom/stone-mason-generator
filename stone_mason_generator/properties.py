@@ -14,7 +14,7 @@ class StoneProperties(bpy.types.PropertyGroup):
 
     density: bpy.props.FloatProperty(
         name="Density",
-        description="Point density on the surface",
+        description="Point density (random scatter only)",
         default=50.0,
         min=0.0,
         max=500.0,
@@ -32,6 +32,14 @@ class StoneProperties(bpy.types.PropertyGroup):
         default=0.25,
         min=0.01,
         max=5.0,
+    )
+
+    joint_width: bpy.props.FloatProperty(
+        name="Joint Width",
+        description="Gap between adjacent stones in a course",
+        default=0.02,
+        min=0.0,
+        max=1.0,
     )
 
     course_height: bpy.props.FloatProperty(

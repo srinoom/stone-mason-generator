@@ -1,13 +1,14 @@
 """Composition layer -- orchestrates engine build order and interface.
 
-Pipeline (refactored in Step 8 architecture review):
+Pipeline (Step 9 refactor):
 
-    1. CourseEngine   -- assign course_index using WallFrame
-    2. ScatterEngine  -- distribute points (course_index transfers to points)
-    3. BondPattern    -- shift point positions based on course_index
-    4. InstanceEngine -- instance stone prototypes on shifted points, realize
+    1. CourseEngine     -- assign course_index on mesh (WallFrame)
+    2. CourseLayout     -- deterministic grid points from stone/joint dims
+    3. BondPattern      -- shift point positions based on course_index
+    4. InstanceEngine   -- instance stone prototypes on shifted points, realize
 
-Builder never imports engines directly -- it calls Composer.
+ScatterEngine has been replaced by LayoutStrategy in the pipeline.
+The Composer accepts any LayoutStrategy subclass.
 """
 
 import bpy
@@ -15,7 +16,7 @@ from typing import List, Tuple
 
 from .graph import NodeGraph
 from .course import CourseEngine
-from .scatter import ScatterEngine
+from .layout import CourseLayout, LayoutStrategy
 from .bond import RunningBond
 from .instance import InstanceEngine
 
@@ -94,13 +95,13 @@ def default_composer() -> Composer:
 
     Pipeline order:
         1. CourseEngine   -- assign course_index (ZUpFrame)
-        2. ScatterEngine  -- distribute points (inherits course_index)
+        2. CourseLayout   -- deterministic grid points
         3. RunningBond    -- shift point positions on odd courses
-        4. InstanceEngine -- instance cubes on shifted points, realize
+        4. InstanceEngine -- instance cubes, realize
     """
     c = Composer()
     c.register_engine(CourseEngine())
-    c.register_engine(ScatterEngine())
+    c.register_engine(CourseLayout())
     c.register_engine(RunningBond())
     c.register_engine(InstanceEngine())
     return c

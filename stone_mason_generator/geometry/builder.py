@@ -58,12 +58,14 @@ class NodeGroupManager:
         (Blender 4.x/5.x convention).
         """
         mapping = {
-            "Density":       props.density,
-            "Seed":          props.seed,
             "Stone_Width":   props.stone_width,
             "Stone_Height":  props.stone_height,
+            "Joint_Width":   props.joint_width,
             "Course_Height": props.course_height,
             "Bond_Offset":   props.bond_offset,
+            # RandomScatter fallback (no-op for CourseLayout)
+            "Seed":          props.seed,
+            "Density":       props.density,
         }
         for identifier, value in mapping.items():
             try:

@@ -19,14 +19,16 @@ class VIEW3D_PT_stone_generator(bpy.types.Panel):
         box.prop(props, "course_height")
 
         box = layout.box()
+        box.label(text="Layout", icon='GRID')
+        box.prop(props, "stone_width")
+        box.prop(props, "joint_width")
+
+        box = layout.box()
         box.label(text="Bond Pattern", icon='MOD_ARRAY')
         box.prop(props, "bond_offset")
 
         box = layout.box()
-        box.label(text="Scatter", icon='OUTLINER_OB_GROUP_INSTANCE')
-        box.prop(props, "seed")
-        box.prop(props, "density")
-        box.prop(props, "stone_width")
+        box.label(text="Stone", icon='OUTLINER_OB_GROUP_INSTANCE')
         box.prop(props, "stone_height")
 
         layout.separator()

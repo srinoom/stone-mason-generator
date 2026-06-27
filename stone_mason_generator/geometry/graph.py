@@ -50,10 +50,6 @@ class NodeGraph:
     def instance_on_points(self, location: tuple = (0, 0)) -> bpy.types.Node:
         return self.new("GeometryNodeInstanceOnPoints", location)
 
-    def distribute_points_on_faces(self,
-                                   location: tuple = (-400, 0)) -> bpy.types.Node:
-        return self.new("GeometryNodeDistributePointsOnFaces", location)
-
     def combine_xyz(self, location: tuple = (-200, -300)) -> bpy.types.Node:
         return self.new("ShaderNodeCombineXYZ", location)
 
@@ -92,6 +88,22 @@ class NodeGraph:
     def set_position(self, location: tuple = (0, 0)) -> bpy.types.Node:
         """Modify position of geometry elements via offset or absolute."""
         return self.new("GeometryNodeSetPosition", location)
+
+    def mesh_grid(self, location: tuple = (0, 0)) -> bpy.types.Node:
+        """Create a Mesh Grid primitive (XY plane, centered at origin)."""
+        return self.new("GeometryNodeMeshGrid", location)
+
+    def mesh_to_points(self, location: tuple = (0, 0)) -> bpy.types.Node:
+        """Convert mesh vertices/edges/faces to point cloud."""
+        return self.new("GeometryNodeMeshToPoints", location)
+
+    def transform_geometry(self, location: tuple = (0, 0)) -> bpy.types.Node:
+        """Transform geometry (translation, rotation, scale)."""
+        return self.new("GeometryNodeTransform", location)
+
+    def float_to_int(self, location: tuple = (0, 0)) -> bpy.types.Node:
+        """Convert float to integer with configurable rounding."""
+        return self.new("FunctionNodeFloatToInt", location)
 
     # -- generic node with params -----------------------------------------
 
