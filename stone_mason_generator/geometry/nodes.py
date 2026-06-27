@@ -7,9 +7,6 @@ Pipeline (Step 14):
     4. CourseLayout
     5. RunningBond
     6. InstanceEngine -- RectangularBlock + 4 modifier stack, realize
-
-Modifiers applied (in order):
-    EdgeBevel → FaceIrregularity → NoiseModifier → CornerBreak
 """
 
 import bpy
@@ -55,11 +52,35 @@ class Composer:
             sockets.extend(primitive_sockets)
         return sockets
 
-    def build_group(self, group: bpy.types.NodeTree,
-                    ctx: ModifierContext = None,
-                    report: ValidationReport = None) -> None:
-        self._ensure_interface(group)
+    def create_fresh_group(self) -> bpy.types.NodeTree:
+        """Delete any existing group and create a brand new one.
 
+        This avoids all Blender interface API iteration issues —
+        we never query or modify an existing interface.
+        """
+        # Remove existing group entirely
+        existing = bpy.data.node_groups.get(self.GROUP_NAME)
+        if existing is not None:
+            bpy.data.node_groups.remove(existing)
+
+        group = bpy.data.node_groups.new(self.GROUP_NAME, "GeometryNodeTree")
+
+        # Create interface sockets on the fresh group
+        for name, in_out, sock_type, default in self.all_sockets():
+            sock = group.interface.new_socket(
+                name=name,
+                in_out=in_out,
+                socket_type=sock_type,
+            )
+            if default is not None:
+                sock.default_value = default
+
+        return group
+
+    def build_pipeline(self, group: bpy.types.NodeTree,
+                       ctx: ModifierContext = None,
+                       report: ValidationReport = None) -> None:
+        """Build the node tree inside an already-interface'd group."""
         graph = NodeGraph(group)
         graph.clear()
 
@@ -85,37 +106,17 @@ class Composer:
         graph.link(prev.outputs["Geometry"],
                    go.inputs["Geometry"])
 
-    def _ensure_interface(self, group: bpy.types.NodeTree) -> None:
-        # Clear all existing interface items, then recreate fresh.
-        # This avoids API differences between Blender versions for
-        # iterating interface items (items vs items_tree vs items_tree()).
-        try:
-            group.interface.clear()
-        except Exception:
-            pass
-
-        for name, in_out, sock_type, default in self.all_sockets():
-            try:
-                sock = group.interface.new_socket(
-                    name=name,
-                    in_out=in_out,
-                    socket_type=sock_type,
-                )
-                if default is not None:
-                    sock.default_value = default
-            except Exception:
-                pass
+    def build_group(self, group: bpy.types.NodeTree,
+                    ctx: ModifierContext = None,
+                    report: ValidationReport = None) -> None:
+        """Legacy entry — builds pipeline into existing group.
+        Use create_fresh_group() + build_pipeline() for clean rebuild.
+        """
+        self.build_pipeline(group, ctx, report)
 
 
 def default_composer() -> Composer:
-    """Return a Composer pre-loaded with the full pipeline.
-
-    Modifier stack order:
-        1. EdgeBevel     — bevel edges (needs original mesh)
-        2. FaceIrregularity — per-face random scale variation
-        3. NoiseModifier — surface roughness displacement
-        4. CornerBreak   — chipped corners
-    """
+    """Return a Composer pre-loaded with the full pipeline."""
     c = Composer()
     c.register_engine(ParameterizeEngine())
     c.register_engine(SurfaceTopology())
@@ -133,6 +134,4 @@ def default_composer() -> Composer:
         realize=True,
     ))
     return c
-
-
 

@@ -14,16 +14,10 @@ class NodeGroupManager:
     @classmethod
     def get_or_create_group(cls, ctx: ModifierContext = None,
                             report: ValidationReport = None) -> bpy.types.NodeTree:
-        group = bpy.data.node_groups.get(cls.GROUP_NAME)
-
-        if group is None:
-            group = bpy.data.node_groups.new(
-                cls.GROUP_NAME,
-                "GeometryNodeTree",
-            )
-
+        """Always create a fresh group — avoids interface iteration bugs."""
         composer = default_composer()
-        composer.build_group(group, ctx, report)
+        group = composer.create_fresh_group()
+        composer.build_pipeline(group, ctx, report)
         return group
 
     @classmethod
@@ -94,3 +88,4 @@ class NodeGroupManager:
                 modifier[identifier + "_"] = value
             except KeyError:
                 pass
+
