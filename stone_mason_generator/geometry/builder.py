@@ -16,7 +16,6 @@ class NodeGroupManager:
 
     @classmethod
     def get_or_create_group(cls) -> bpy.types.NodeTree:
-        """Return the SMG node group, creating and building it if necessary."""
         group = bpy.data.node_groups.get(cls.GROUP_NAME)
 
         if group is None:
@@ -31,11 +30,6 @@ class NodeGroupManager:
 
     @classmethod
     def apply(cls, obj: bpy.types.Object, props) -> bpy.types.Modifier:
-        """Add (or refresh) the scatter modifier on *obj*.
-
-        ``props`` is a :class:`StoneProperties` instance; its fields are
-        pushed into the modifier socket inputs.
-        """
         group = cls.get_or_create_group()
 
         modifier = obj.modifiers.get(cls.GROUP_NAME)
@@ -51,19 +45,15 @@ class NodeGroupManager:
 
     @staticmethod
     def _sync_props(modifier: bpy.types.Modifier, props) -> None:
-        """Copy StoneProperties fields into the modifier's input sockets.
-
-        Modifier socket identifiers use the interface socket name with
-        spaces replaced by underscores and a trailing underscore
-        (Blender 4.x/5.x convention).
-        """
+        """Copy StoneProperties fields into modifier socket inputs."""
         mapping = {
             "Stone_Width":   props.stone_width,
             "Stone_Height":  props.stone_height,
+            "Stone_Depth":   props.stone_depth,
+            "Roughness":     props.roughness,
             "Joint_Width":   props.joint_width,
             "Course_Height": props.course_height,
             "Bond_Offset":   props.bond_offset,
-            # RandomScatter fallback (no-op for CourseLayout)
             "Seed":          props.seed,
             "Density":       props.density,
         }
@@ -72,4 +62,3 @@ class NodeGroupManager:
                 modifier[identifier + "_"] = value
             except KeyError:
                 pass
-

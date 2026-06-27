@@ -28,8 +28,10 @@ class VIEW3D_PT_stone_generator(bpy.types.Panel):
         box.prop(props, "bond_offset")
 
         box = layout.box()
-        box.label(text="Stone", icon='OUTLINER_OB_GROUP_INSTANCE')
+        box.label(text="Stone", icon='MESH_CUBE')
         box.prop(props, "stone_height")
+        box.prop(props, "stone_depth")
+        box.prop(props, "roughness")
 
         layout.separator()
         layout.operator("stone.generate", icon="MOD_REMESH")
@@ -48,4 +50,3 @@ def register():
 def unregister():
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
-

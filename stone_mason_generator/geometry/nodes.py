@@ -1,22 +1,16 @@
 """Composition layer -- orchestrates engine build order and interface.
 
-Pipeline (Step 10 refactor):
+Pipeline (Step 11):
 
     1. ParameterizeEngine  -- UVN coordinates + SurfaceContext
-    2. SurfaceTopology      -- boundary/corner detection
-    3. CourseEngine         -- course_index from v_coord
-    4. CourseLayout         -- grid points from SurfaceContext bounds
-    5. RunningBond          -- shift point positions
-    6. InstanceEngine       -- instance cubes, realize
+    2. SurfaceTopology     -- boundary/corner detection
+    3. CourseEngine        -- course_index from v_coord
+    4. CourseLayout        -- grid points from SurfaceContext bounds
+    5. RunningBond         -- shift point positions
+    6. InstanceEngine      -- instance StonePrimitive, realize
 
-SurfaceContext flows from ParameterizeEngine → CourseLayout via
-the Composer. Named Attributes stored on geometry:
-  - u_coord, v_coord, n_coord  (surface parameterization)
-  - is_top/bottom/left/right_boundary, is_corner  (topology)
-  - course_index, course_base_v  (course generation)
-
-Internal pipeline data (bounds, width, height) lives in
-SurfaceContext node references — not stored as attributes.
+SurfaceContext flows from ParameterizeEngine → CourseLayout.
+Primitive sockets flow from InstanceEngine → interface.
 """
 
 import bpy
@@ -30,6 +24,7 @@ from .course import CourseEngine
 from .layout import CourseLayout, LayoutStrategy
 from .bond import RunningBond
 from .instance import InstanceEngine
+from .primitive import RectangularBlock
 
 
 class Composer:
@@ -54,6 +49,8 @@ class Composer:
             sockets.extend(engine.SOCKETS)
             frame_sockets = getattr(engine, 'frame_sockets', [])
             sockets.extend(frame_sockets)
+            primitive_sockets = getattr(engine, 'primitive_sockets', [])
+            sockets.extend(primitive_sockets)
         return sockets
 
     def build_group(self, group: bpy.types.NodeTree) -> None:
@@ -65,7 +62,7 @@ class Composer:
         gi = graph.group_input(location=(-800, 0))
 
         prev = gi
-        ctx = None  # SurfaceContext, populated by ParameterizeEngine
+        ctx = None
 
         for engine in self._engines:
             if isinstance(engine, ParameterizeEngine):
@@ -107,7 +104,7 @@ def default_composer() -> Composer:
         3. CourseEngine        -- course_index from v_coord
         4. CourseLayout        -- grid from SurfaceContext bounds
         5. RunningBond         -- stagger odd courses
-        6. InstanceEngine      -- instance cubes, realize
+        6. InstanceEngine      -- instance RectangularBlock, realize
     """
     c = Composer()
     c.register_engine(ParameterizeEngine())
@@ -115,5 +112,5 @@ def default_composer() -> Composer:
     c.register_engine(CourseEngine())
     c.register_engine(CourseLayout())
     c.register_engine(RunningBond())
-    c.register_engine(InstanceEngine())
+    c.register_engine(InstanceEngine(primitive=RectangularBlock()))
     return c
