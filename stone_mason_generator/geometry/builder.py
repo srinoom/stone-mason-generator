@@ -70,3 +70,4 @@ class NodeGroupManager:
                 modifier[identifier + "_"] = value
             except KeyError:
                 pass
+

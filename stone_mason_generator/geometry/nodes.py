@@ -1,17 +1,11 @@
 """Composition layer -- orchestrates engine build order and interface.
 
-The Composer is the single place that knows:
-  - which engines exist
-  - what order they run in
-  - which interface sockets the group needs
+Pipeline (refactored in Step 8 architecture review):
 
-Engines declare socket requirements via ``SOCKETS`` and expose a
-``build(graph, group_input, prev_geometry) -> node`` method.
-
-Pipeline:
-    1. CourseEngine  -- assign course_index using WallFrame
-    2. BondPattern   -- stagger courses with horizontal offset
-    3. ScatterEngine -- distribute stones on faces (inherits courses + bond)
+    1. CourseEngine   -- assign course_index using WallFrame
+    2. ScatterEngine  -- distribute points (course_index transfers to points)
+    3. BondPattern    -- shift point positions based on course_index
+    4. InstanceEngine -- instance stone prototypes on shifted points, realize
 
 Builder never imports engines directly -- it calls Composer.
 """
@@ -21,8 +15,9 @@ from typing import List, Tuple
 
 from .graph import NodeGraph
 from .course import CourseEngine
-from .bond import RunningBond
 from .scatter import ScatterEngine
+from .bond import RunningBond
+from .instance import InstanceEngine
 
 
 class Composer:
@@ -99,12 +94,14 @@ def default_composer() -> Composer:
 
     Pipeline order:
         1. CourseEngine   -- assign course_index (ZUpFrame)
-        2. RunningBond    -- stagger odd courses by Bond Offset
-        3. ScatterEngine  -- distribute stones (inherits courses + bond)
+        2. ScatterEngine  -- distribute points (inherits course_index)
+        3. RunningBond    -- shift point positions on odd courses
+        4. InstanceEngine -- instance cubes on shifted points, realize
     """
     c = Composer()
-    c.register_engine(CourseEngine())       # defaults to ZUpFrame
-    c.register_engine(RunningBond())        # defaults to 50% stagger
+    c.register_engine(CourseEngine())
     c.register_engine(ScatterEngine())
+    c.register_engine(RunningBond())
+    c.register_engine(InstanceEngine())
     return c
 

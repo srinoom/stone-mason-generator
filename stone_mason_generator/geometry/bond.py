@@ -1,19 +1,25 @@
-"""Bond Pattern Engine -- generates staggered masonry offsets.
+"""Bond Pattern Engine -- staggers stone positions along wall run (U axis).
 
-Pipeline stage (runs AFTER CourseEngine, BEFORE ScatterEngine):
+Refactored in Step 8 architecture review:
+  - Bond now operates on SCATTERED POINTS, not on the source mesh
+  - Reads course_index from points (transferred from mesh via
+    Blender attribute interpolation)
+  - Shifts point positions along X (U axis) using Set Position
+  - Does NOT touch the source mesh geometry
+  - bond_offset attribute is no longer stored (computed + applied
+    in one pass, no downstream consumer needs it)
 
-    Geometry (with course_index attribute)
+Pipeline stage (runs AFTER ScatterEngine, BEFORE InstanceEngine):
+
+    Points (with course_index attribute)
       → read course_index
-      → compute horizontal offset (subclass strategy)
-      → Set Position (shift along X / wall-run axis)
-      → store bond_offset attribute
-      → Output Geometry (shifted)
+      → calc offset per bond strategy
+      → Set Position (shift along X)
+      → Output Points (shifted)
 
-Bond styles are implemented as subclasses of BondPattern.
-Each subclass overrides :meth:`calc_offset` to produce a different
-horizontal offset pattern. CourseEngine is never modified.
-
-Current implementation: RunningBond (50% offset on odd courses).
+Bond styles are subclasses of BondPattern.  Each overrides
+:meth:`calc_offset` to compute a horizontal offset from course_index.
+CourseEngine is never modified.
 """
 
 import bpy
@@ -37,7 +43,7 @@ class BondPattern:
     def calc_offset(self, graph: NodeGraph,
                     group_input: bpy.types.Node,
                     course_index_node: bpy.types.Node) -> bpy.types.Node:
-        """Return a node whose output 0 is the per-vertex offset scalar.
+        """Return a Math node whose output 0 is the per-point offset.
 
         Args:
             graph: NodeGraph wrapper.
@@ -51,15 +57,14 @@ class BondPattern:
     def build(self, graph: NodeGraph,
               group_input: bpy.types.Node,
               prev_geometry: bpy.types.Node) -> bpy.types.Node:
-        """Build the bond-pattern sub-tree.
+        """Build the bond-pattern sub-tree on scattered points.
 
-        Reads course_index (set by CourseEngine), computes horizontal
-        offset, shifts geometry along X (wall run direction), and
-        stores the offset as an attribute for downstream engines.
+        Reads course_index from points, computes horizontal offset,
+        shifts point positions along X (U axis), returns shifted points.
         """
         g = graph
 
-        # --- read course_index from geometry ---
+        # --- read course_index from points ---
         read_idx = g.named_attribute(location=(-400, 0))
         read_idx.data_type = 'FLOAT'
         read_idx.inputs["Name"].default_value = "course_index"
@@ -67,33 +72,26 @@ class BondPattern:
         # --- compute offset via subclass strategy ---
         offset_node = self.calc_offset(g, group_input, read_idx)
 
-        # --- build offset vector (X, 0, 0) via Combine XYZ ---
-        combine_offset = g.combine_xyz(location=(50, 100))
-        g.link(offset_node.outputs[0], combine_offset.inputs["X"])
-        # Y and Z default to 0 — no vertical shift
+        # --- build offset vector (X = offset, Y = 0, Z = 0) ---
+        combine = g.combine_xyz(location=(100, 0))
+        g.link(offset_node.outputs[0], combine.inputs["X"])
 
-        # --- set position: add offset vector to current position ---
+        # --- set position: shift points along X ---
         set_pos = g.set_position(location=(200, 0))
-        g.link(prev_geometry.outputs[0], set_pos.inputs["Geometry"])
-        g.link(combine_offset.outputs[0], set_pos.inputs["Offset"])
+        g.link(prev_geometry.outputs["Points"],
+               set_pos.inputs[0])  # Geometry input
+        g.link(combine.outputs["Vector"],
+               set_pos.inputs["Offset"])  # Vector offset
 
-        # --- store bond_offset attribute ---
-        store_offset = g.store_named_attribute(location=(350, 0))
-        store_offset.data_type = 'FLOAT'
-        store_offset.domain = 'POINT'
-        store_offset.inputs["Name"].default_value = "bond_offset"
-        g.link(set_pos.outputs[0], store_offset.inputs["Geometry"])
-        g.link(offset_node.outputs[0], store_offset.inputs["Value"])
-
-        return store_offset
+        return set_pos
 
 
 class RunningBond(BondPattern):
-    """Running bond: 50% offset on odd courses.
+    """Running bond: stagger odd courses by Bond Offset.
 
     offset = (course_index % 2) * bond_offset
 
-    This is the classic brick-laying stagger pattern.
+    Even courses: no shift.  Odd courses: shifted by Bond Offset.
     """
 
     def calc_offset(self, graph: NodeGraph,
@@ -102,7 +100,7 @@ class RunningBond(BondPattern):
         g = graph
 
         # --- course_index % 2 → 0 (even) or 1 (odd) ---
-        modulo = g.math('MODULO', location=(-200, 0))
+        modulo = g.math('MODULE', location=(-200, 0))
         modulo.inputs[1].default_value = 2.0
         g.link(course_index_node.outputs["Attribute"], modulo.inputs[0])
 

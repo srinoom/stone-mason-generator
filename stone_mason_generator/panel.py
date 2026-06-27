@@ -5,7 +5,7 @@ import bpy
 
 class VIEW3D_PT_stone_generator(bpy.types.Panel):
 
-    bl_space_type = "VIEW3D"
+    bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_category = "Stone"
     bl_label = "Stone Mason Generator"
@@ -46,3 +46,4 @@ def register():
 def unregister():
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
+

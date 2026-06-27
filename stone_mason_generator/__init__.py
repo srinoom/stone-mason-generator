@@ -1,6 +1,6 @@
 """Stone Mason Generator -- main add-on module.
 
-Step 8: Bond Pattern Generator (RunningBond).
+Step 8: Bond Pattern + architecture refactor (Pipeline B).
 """
 
 bl_info = {
@@ -20,16 +20,18 @@ from .geometry import builder
 from .geometry import graph
 from .geometry import wall_frame
 from .geometry import course
-from .geometry import bond
 from .geometry import scatter
+from .geometry import bond
+from .geometry import instance
 from .geometry import nodes
 
 modules = (
     graph,
     wall_frame,
     course,
-    bond,
     scatter,
+    bond,
+    instance,
     nodes,
     builder,
     properties,
@@ -52,3 +54,4 @@ def unregister():
 
 if __name__ == "__main__":
     register()
+
